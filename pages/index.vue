@@ -7,7 +7,7 @@
       </v-card>
       <v-card>
         <v-card-title class="headline">
-          ようこそ
+          ようこそ 
         </v-card-title>
         <v-card-text>
           <p>

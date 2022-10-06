@@ -20,6 +20,7 @@ export default {
   // Plugins to run before rendering page: https://go.nuxtjs.dev/config-plugins
   plugins: [
     "@/plugins/firebase.js",
+    "@/plugins/myPlugins.js",
   ],
 
   // Auto import components: https://go.nuxtjs.dev/config-components
@@ -63,17 +64,37 @@ export default {
   vuetify: {
     customVariables: ['~/assets/variables.scss'],
     theme: {
-      dark: true,
+      dark: false,
+      options: {
+        customProperties: true,
+      },
       themes: {
-        dark: {
-          primary: colors.blue.darken2,
-          accent: colors.grey.darken3,
-          secondary: colors.amber.darken3,
-          info: colors.teal.lighten1,
-          warning: colors.amber.base,
-          error: colors.deepOrange.accent4,
-          success: colors.green.accent3,
+        light: {
+          "admin-background": "#fbf7ff",
+          "user-background": "#fffafc",
+          // "admin-background": "#fbf7ff",
+          // "user-background": "#fff7fa",
+          admin: "#8f23ff",
+          user: "#ff70ff",
+          "user-accent": "#4e65cf",
+          "user-opacity": "#F8BBD0",
+          none: "#000",
+          secondary: colors.pink.darken4,
+          accent: "#e91e63",
+          error: "#ff4133",
+          warning: "#ffc107",
+          info: "#2196f3",
+          success: "#4caf50",
         },
+        // dark: {
+        //   primary: colors.blue.darken2,
+        //   accent: colors.grey.darken3,
+        //   secondary: colors.amber.darken3,
+        //   info: colors.teal.lighten1,
+        //   warning: colors.amber.base,
+        //   error: colors.deepOrange.accent4,
+        //   success: colors.green.accent3,
+        // },
       },
     },
   },

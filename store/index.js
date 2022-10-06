@@ -8,7 +8,7 @@ function getDefaultState() {
 
 export const state = getDefaultState();
 
-//同期処理
+// 同期処理
 export const mutations = {
   startLogin: (state) => {
     state.runningLogin = true;
@@ -18,6 +18,9 @@ export const mutations = {
   },
   startTask: (state) => {
     state.tasks = true;
+  },
+  completeTask: (state) => {
+    state.tasks = false;
   },
   addMessage: (state, message) => {
     if (!message.dismissible) {
@@ -30,5 +33,14 @@ export const mutations = {
       message.risk = 3;
     }
     state.messages.push(message);
+  }
+}
+
+// stateの内容を加工して返す処理
+export const getters = {
+  latestMsg: (state) => {
+    const messages = state.messages;
+    const length = messages.length;
+    return state.messages[length-1].text;
   }
 }

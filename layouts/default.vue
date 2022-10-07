@@ -1,15 +1,18 @@
 <template>
-  <v-app :style="{ background: $vuetify.theme.themes.light[back] }">
-    <v-content>
+  <v-app >
+    <v-main>
       <v-containter>
         <nuxt/>
       </v-containter>
-    </v-content>
+      <my-alert></my-alert>
+    </v-main>
   </v-app>
 </template>
 
 <script>
+import MyAlert from '~/components/MyAlert.vue'
 export default {
+  components: { MyAlert },
   name: 'DefaultLayout',
   data() {
     return {
@@ -18,3 +21,7 @@ export default {
   },
 }
 </script>
+
+<style scoped>
+
+</style>

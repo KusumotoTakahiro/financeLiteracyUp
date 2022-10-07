@@ -33,6 +33,9 @@ export const mutations = {
       message.risk = 3;
     }
     state.messages.push(message);
+  },
+  removeMessage: (state) => {
+    state.messages.shift();
   }
 }
 
@@ -42,5 +45,8 @@ export const getters = {
     const messages = state.messages;
     const length = messages.length;
     return state.messages[length-1].text;
+  },
+  getMessages: (state) => {
+    return state.messages;
   }
 }

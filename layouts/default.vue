@@ -1,9 +1,8 @@
 <template>
   <v-app >
     <v-main>
-      <v-containter>
-        <nuxt/>
-      </v-containter>
+      <my-title></my-title>
+      <nuxt></nuxt>
       <my-alert></my-alert>
     </v-main>
   </v-app>
@@ -11,8 +10,9 @@
 
 <script>
 import MyAlert from '~/components/MyAlert.vue'
+import MyTitle from '~/components/MyTitle.vue'
 export default {
-  components: { MyAlert },
+  components: { MyAlert, MyTitle },
   name: 'DefaultLayout',
   data() {
     return {

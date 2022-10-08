@@ -3,6 +3,7 @@ function getDefaultState() {
     runningLogin: false,
     tasks: false,
     messages: [],
+    title: "金融リテラシーを高める!",
   }
 }
 
@@ -36,6 +37,9 @@ export const mutations = {
   },
   removeMessage: (state) => {
     state.messages.shift();
+  },
+  setTitle: (state, next) => {
+    state.title = next.title;
   }
 }
 
@@ -48,5 +52,8 @@ export const getters = {
   },
   getMessages: (state) => {
     return state.messages;
+  },
+  getTitle: (state) => {
+    return state.title;
   }
 }

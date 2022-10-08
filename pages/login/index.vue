@@ -54,17 +54,14 @@
               <v-btn
                 text
                 block
-                @click="
-                  isMissingPass = true;
-                  isLogin = false;
-                "
+                @click="changePass()"
               > パスワードを忘れた場合 </v-btn>
             </div>
           </template>
           <template v-else-if="isMissingPass && !isSignedIn">
-            <v-card-title class="px-0 black--text">
+            <!-- <v-card-title class="px-0 black--text">
               パスワード更新
-            </v-card-title>
+            </v-card-title> -->
             <div class="pb-2 black--text">
               パスワード更新後は過去のパスワードは使用できません
             </div>
@@ -92,10 +89,8 @@
               <v-btn
                 text
                 block
-                @click="
-                  isMissingPass = false;
-                  isLogin = true;
-                ">ログイン画面に戻る</v-btn>
+                @click="backLogin()"
+              >ログイン画面に戻る</v-btn>
             </div>
           </template>
           <v-row justify="end">
@@ -103,7 +98,7 @@
               class="black--text mt-15 "
               height="40"
               color=""
-              @click="$router.push(`/`);"
+              @click="goToHome()"
             >Homeに戻る</v-btn>
           </v-row>
         </v-card-text>
@@ -203,6 +198,20 @@ export default {
   methods: {
     init() {
       this.initialized = true;
+    },
+    changePass() {
+      this.isMissingPass = true;
+      this.isLogin = false;
+      this.$store.commit("setTitle", {title:"パスワード更新"}); 
+    },
+    backLogin() {
+      this.isMissingPass = false;
+      this.isLogin = true;
+      this.$store.commit("setTitle", {title:"ログイン画面"}); 
+    },
+    goToHome() {
+      this.$store.commit("setTitle", {title:"金融リテラシーを高める!"}); 
+      this.$router.push("/");
     },
     login(force = true) {
       if (!this.mailAddress || !this.password) {

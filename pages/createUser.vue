@@ -1,13 +1,229 @@
 <template>
-  <v-container fill-height>
-    <div class="title">新規ユーザ登録</div>
-    <v-btn class="mx-auto">center</v-btn>
-    <v-btn class="mx-auto">center</v-btn>
-  </v-container>
+  <v-dialog
+    v-model="dialog"
+    max-width="450"
+    persistent
+    hide-overlay
+    no-click-animation
+    content-class="rounded-lg elevation-0"
+    transition="dialog-bottom-transition"
+  >
+    <v-card>
+      <v-card-text>
+        <div class="d-flex justify-center pa-5">
+          <!-- <v-img max-width="250" :src="logoImage" class="justify-center" /> -->
+        </div>
+        <template>
+          <div>
+            <div class="form-header">ユーザネーム</div>
+            <v-text-field
+              v-model="userName"
+              clearable
+              dense
+              color=""
+              outlined
+              type="text"
+              hide-details=""
+              prepend-inner-icon="mdi-account"
+            ></v-text-field>
+            <div class="form-header">メールアドレス</div>
+            <v-text-field
+              v-model="mailAddress"
+              clearable
+              dense
+              color=""
+              outlined
+              type="email"
+              hide-details=""
+              prepend-inner-icon="mdi-email"
+            ></v-text-field>
+            <div class="form-header">パスワード</div>
+            <v-text-field
+              v-model="password"
+              clearable
+              dense
+              color=""
+              :append-icon="showPass ? 'mdi-eye' : 'mdi-eye-off'"
+              :type="showPass ? 'text' : 'password'"
+              prepend-inner-icon="mdi-key"
+              outlined
+              counter="20"
+              @click:append="showPass = !showPass"
+              @keyup.enter="login"
+            ></v-text-field>
+            <v-btn
+              class="black--text"
+              block
+              height="40"
+              color=""
+              @click="createUser()"
+            >登録</v-btn>
+          </div> 
+        </template>
+        <v-row justify="end">
+          <v-btn
+            class="black--text mt-15 "
+            height="40"
+            color=""
+            @click="goToHome()"
+          >Homeに戻る</v-btn>
+        </v-row>
+      </v-card-text>
+    </v-card>
+  </v-dialog>
 </template>
 
 <script>
+import {
+  getAuth,
+  createUserWithEmailAndPassword
+} from "firebase/auth";
+import * as func from "~/plugins/myPlugins";
 
+export default {
+  name: 'createUserPage',
+  layout: "default",
+
+  data() {
+    return {
+      dialog: true,
+      userName: "",
+      mailAddress: "",
+      password: "",
+      showPass: false,
+      initialized: false,
+      errorMessage: [],
+    }
+  },
+  computed: {
+    isSignedIn() {
+      return this.$store.getters.isSignedIn;
+    },
+  },
+  mounted() {
+    if (!this.initialized) {
+      this.init();
+    }
+  },
+  methods: {
+    init() {
+      this.initialized = true;
+    },
+    goToHome() {
+      this.$store.commit("setTitle", {title:"金融リテラシーを高める!"});
+      this.$router.push(`/`);
+    },
+    createUser(force = true) {
+      //バリデーション
+      if (!this.userName) {
+        if (force) {
+          this.$store.commit("addMessage", {
+            text: `ユーザネームを入力してください`,
+            risk: 3,
+          });
+        }
+        return;
+      }
+      if (!this.mailAddress) {
+        if (force) {
+          this.$store.commit("addMessage", {
+            text: `メールアドレスを入力してください`,
+            risk: 3,
+          });
+        }
+        return;
+      }
+      if (!this.password) {
+        if (force) {
+          this.$store.commit("addMessage", {
+            text: `パスワードを入力してください`,
+            risk: 3,
+          });
+        }
+        return;
+      }
+      if (!func.isMail(this.mailAddress)) {
+        if (force) {
+          this.$store.commit("addMessage", {
+            text: `メールアドレスの形式が不正です`,
+            risk: 3,
+          });
+        }
+        return;
+      }
+      this.$store.commit("startTask");
+      const auth = getAuth();
+      
+      createUserWithEmailAndPassword(
+        auth,
+        this.mailAddress,
+        this.password
+      )
+      .then((userCredential)=>{
+        const user = userCredential.user;
+        console.log(user);
+        this.$store.commit("addMessage", {
+          text: "ユーザを作成しました!",
+          risk: 0,
+        });
+      })
+      .catch((error) => {
+        const errorCode = error.code;
+        const errorMessage = error.message;
+        alert(errorCode+"  "+errorMessage);
+        this.$store.commit("addMessage", {
+          text: `ユーザ作成に失敗しました:エラーコード[${errorCode}], ${errorMessage}`,
+          risk: 3,
+        })
+      });
+
+      // async () => {
+      //   try {
+      //     await createUserWithEmailAndPassword(
+      //       auth, 
+      //       this.mailAddress,
+      //       this.password
+      //     ).then((userCredential) => {
+      //       //signed in
+      //       this.$store.commit("addMessage", {
+      //         text: "ユーザを作成しました",
+      //         risk: 0,
+      //       })
+      //       const user = userCredential.user;
+      //       const accessToken = user.accessToken;
+      //       const email = user.mailAddress;
+      //       const uid = user.uid;
+      //       const createdAt = user.createdAt;
+      //       const lastLoginAt = user.lastLoginAt;
+      //       console.log(accessToken);
+      //       console.log(email);
+      //       console.log(uid);
+      //       console.log(createdAt);
+      //       console.log(lastLoginAt);
+      //       this.$router.push("/")
+      //     })
+      //     .catch((error) => {
+      //       this.$store.commit("completeTask");
+      //       const errorCode = error.code;
+      //       const errorMessage = error.message;
+      //       this.$store.commit("addMessage", {
+      //         text: `ユーザ作成に失敗しました:エラーコード[${errorCode}], ${errorMessage}`,
+      //         risk: 3,
+      //       })
+      //     })
+      //   } catch(error) {
+      //     const errorCode = error.code;
+      //     let errorMessage = error.message;
+      //     this.$store.commit("completeTask");
+      //     this.$store.commit("addMessage", {
+      //       text: `ユーザ作成に失敗しました:エラーコード[${errorCode}], ${errorMessage}`,
+      //     });
+      //   }
+      // }
+    },
+
+  }
+}
 </script>
 <style>
 .title {

@@ -1,16 +1,15 @@
 <template>
   <v-container fill-height>
-    <div class="title">金融リテラシーを高める!</div>
     <v-row justify="center" >
       <v-btn 
-        @click="$router.push(`/createUser`)"
+        @click="createUser()"
         elevation="3"
         width="150px"
         height="70px"
         class="mx-auto"
       >新規ユーザ</v-btn>
       <v-btn 
-        @click="$router.push(`/login`)" 
+        @click="goToLogin()" 
         elevation="3"
         width="150px"
         height="70px"
@@ -42,24 +41,21 @@ export default {
 
     }
   },
+  computed: {
+  },
   methods: {
     goToLogin() {
+      this.$store.commit("setTitle", {title:"ログイン画面"});
       this.$router.push("/login");
     },
     createUser() {
-      this.router.push("/createUser");
+      this.$store.commit("setTitle", {title:"新規ユーザ登録"});
+      this.$router.push("/createUser");
     }
   }
 }
 </script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Gamja+Flower&display=swap');
-.title {
-  text-align: center;
-  position: fixed; /* ウィンドウを基準に画面に固定 */
-  top: 20px;
-  width:500px;
-  left: calc(50% - 250px);
-  font-size: 50px;
-}
+
 </style>

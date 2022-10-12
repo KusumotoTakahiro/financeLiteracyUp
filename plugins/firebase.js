@@ -19,7 +19,18 @@ const config = {
 
 export const firebaseApp = initializeApp(config);
 export const fireStore = getFirestore(firebaseApp);
-
+export const func = async function() {
+  try {
+    const q = collection(fireStore, "users");
+    const querySnapshot = await getDocs(q);
+    querySnapshot.forEach(doc => {
+      console.log(doc.data());
+    })
+  }
+  catch(error) {
+    console.log(error)
+  }
+}
 
 // export default {
 //   firebaseApp,

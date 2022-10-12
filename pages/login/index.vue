@@ -243,12 +243,18 @@ export default {
               auth, 
               this.mailAddress,
               this.password
-            );
+            )
+            .then(res => {
+              // console.log(res);
+              // console.log(res.user.accessToken);
+              let token = res.user.accessToken;
+              this.$store.commit("setIdToken", token);
+            })
             this.$store.commit("addMessage", {
               text: "ログインしました",
               risk: 0,
             });
-            this.$router.push("/top");
+            this.$router.push("/user");
           } catch(error) {
             const errorCode = error.code;
             let errorMessage = error.message;

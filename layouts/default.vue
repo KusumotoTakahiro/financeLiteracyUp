@@ -12,6 +12,9 @@
 import MyAlert from '~/components/MyAlert.vue'
 import MyTitle from '~/components/MyTitle.vue'
 export default {
+  beforeCreate() {
+    console.log("default beforeCreate");
+  },
   components: { MyAlert, MyTitle },
   name: 'DefaultLayout',
   data() {
@@ -19,6 +22,7 @@ export default {
       
     }
   },
+
 }
 </script>
 

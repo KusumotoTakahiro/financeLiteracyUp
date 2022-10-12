@@ -1,4 +1,10 @@
 import { initializeApp } from "firebase/app";
+import {
+  getFirestore, 
+  collection, 
+  getDocs, 
+  doc, 
+} from 'firebase/firestore'
 
 const config = {
   apiKey: "AIzaSyCazp1pnz1QMrN0m1aU23xZp78HMkhXaLw",
@@ -11,6 +17,10 @@ const config = {
   measurementId: "G-WFSW16WRS1"
 };
 
-const firebaseApp = initializeApp(config);
+export const firebaseApp = initializeApp(config);
+export const fireStore = getFirestore(firebaseApp);
 
-export default firebaseApp;
+
+// export default {
+//   firebaseApp,
+// }

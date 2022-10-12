@@ -1,9 +1,27 @@
+import {fireStore} from '@/plugins/firebase'
+import {
+  getFirestore, 
+  collection, 
+  getDocs, 
+  doc, 
+} from 'firebase/firestore'
+
+const usersRef = collection(fireStore, "users");
+
 function getDefaultState() {
   return {
     runningLogin: false,
     tasks: false,
     messages: [],
     title: "金融リテラシーを高める!",
+    user: null,
+    idToken: null,
+    shop: {},
+    present: {},
+    work: {},
+    tax: {},
+    fine: {},
+    history: {},
   }
 }
 
@@ -40,6 +58,30 @@ export const mutations = {
   },
   setTitle: (state, next) => {
     state.title = next.title;
+  },
+  setUser: (state, user) => {
+    state.user = user;
+  },
+  setIdToken: (state, idToken) => {
+    state.idToken = idToken;
+  },
+  setWork: (state, work) => {
+    state.work = work;
+  },
+  setFine: (state, fine) => {
+    state.fine = fine;
+  },
+  setPresent: (state, present) => {
+    state.present = present;
+  },
+  setShop: (state, shop) => {
+    state.shop = shop;
+  },
+  setTax: (state, tax) => {
+    state.tax = tax;
+  },
+  setHistory: (state, history) => {
+    state.history = history;
   }
 }
 
@@ -55,5 +97,35 @@ export const getters = {
   },
   getTitle: (state) => {
     return state.title;
+  },
+  getUser: (state) => {
+    return state.user;
+  },
+  getIdToken: (state) => {
+    return state.idToken;
+  },
+  getShop: (state) => {
+    return state.shop;
+  },
+  getWork: (state) => {
+    return state.work;
+  },
+  getFine: (state) => {
+    return state.fine;
+  },
+  getHistory: (state) => {
+    return state.history;
+  },
+  getTax: (state) => {
+    return state.tax;
+  },
+  getPresent: (state) => {
+    return state.present;
+  }
+}
+
+export const actions = {
+  async fetchUserData() {
+    
   }
 }

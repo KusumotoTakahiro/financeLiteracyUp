@@ -41,7 +41,7 @@ export default {
     console.log(user.uid);
     //func();
     try {
-      const q = collection(fireStore, "users");
+      // const q = collection(fireStore, "users");
       const docRef = doc(fireStore, "users", user.uid);
       const querySnapshot = await getDoc(docRef);
       console.log(querySnapshot.data());

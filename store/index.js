@@ -92,6 +92,9 @@ export const getters = {
     const length = messages.length;
     return state.messages[length-1].text;
   },
+  isAuthenticated(state) {
+    return state.user != null;
+  },
   getMessages: (state) => {
     return state.messages;
   },
@@ -121,7 +124,7 @@ export const getters = {
   },
   getPresent: (state) => {
     return state.present;
-  }
+  },
 }
 
 export const actions = {

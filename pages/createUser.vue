@@ -26,7 +26,10 @@
               hide-details=""
               prepend-inner-icon="mdi-account"
             ></v-text-field>
-            <div class="form-header">メールアドレス</div>
+            <div 
+            class="form-header"
+            v-if="attribute=='parent'"
+            >メールアドレス</div>
             <v-text-field
               v-model="mailAddress"
               clearable
@@ -36,6 +39,22 @@
               type="email"
               hide-details=""
               prepend-inner-icon="mdi-email"
+              v-if="attribute=='parent'"
+            ></v-text-field>
+            <div 
+            class="form-header"
+            v-if="attribute=='child'"
+            >ユーザID</div>
+            <v-text-field
+              v-model="userID"
+              clearable
+              dense
+              color=""
+              outlined
+              type="text"
+              hide-details=""
+              prepend-inner-icon="mdi-account-key"
+              v-if="attribute=='child'"
             ></v-text-field>
             <div class="form-header">パスワード</div>
             <v-text-field
@@ -51,6 +70,23 @@
               @click:append="showPass = !showPass"
               @keyup.enter="login"
             ></v-text-field>
+            <v-row justify="center">
+              <v-radio-group
+                v-model="attribute"
+                row
+              >
+                <v-radio
+                  label="親ロール"
+                  value="parent"
+                  class="mx-7"
+                ></v-radio>
+                <v-radio
+                  label="子供ロール"
+                  value="child"
+                  class="mx-7"
+                ></v-radio>
+              </v-radio-group>
+            </v-row>
             <v-btn
               class="black--text"
               block
@@ -76,9 +112,17 @@
 <script>
 import {
   getAuth,
-  createUserWithEmailAndPassword
+  createUserWithEmailAndPassword,
+  updateProfile,
 } from "firebase/auth";
 import * as func from "~/plugins/myPlugins";
+import {
+  doc,
+  setDoc,
+} from "firebase/firestore";
+import {
+  fireStore,
+} from "~/plugins/firebase";
 
 export default {
   name: 'createUserPage',
@@ -89,10 +133,12 @@ export default {
       dialog: true,
       userName: "",
       mailAddress: "",
+      userID: "",
       password: "",
       showPass: false,
       initialized: false,
       errorMessage: [],
+      attribute: "parent",
     }
   },
   computed: {
@@ -124,10 +170,19 @@ export default {
         }
         return;
       }
-      if (!this.mailAddress) {
+      if (!this.mailAddress && this.attribute==='parent') {
         if (force) {
           this.$store.commit("addMessage", {
             text: `メールアドレスを入力してください`,
+            risk: 3,
+          });
+        }
+        return;
+      }
+      if (!this.userID && this.attribute==='child') {
+        if (force) {
+          this.$store.commit("addMessage", {
+            text: `ユーザIDを入力してください`,
             risk: 3,
           });
         }
@@ -142,7 +197,7 @@ export default {
         }
         return;
       }
-      if (!func.isMail(this.mailAddress)) {
+      if (!func.isMail(this.mailAddress) && this.attribute==='parent') {
         if (force) {
           this.$store.commit("addMessage", {
             text: `メールアドレスの形式が不正です`,
@@ -154,6 +209,10 @@ export default {
       this.$store.commit("startTask");
       const auth = getAuth();
       
+      if (this.attribute==='child') {
+        this.mailAddress = 'user@' + this.userID + '.com';
+      }
+
       createUserWithEmailAndPassword(
         auth,
         this.mailAddress,
@@ -162,64 +221,35 @@ export default {
       .then((userCredential)=>{
         const user = userCredential.user;
         console.log(user);
+        setDoc(doc(fireStore, "users", user.uid), {
+          attribute: this.attribute,
+          balance: 1000,
+          group: null,
+          history: [],
+        })
         this.$store.commit("addMessage", {
           text: "ユーザを作成しました!",
           risk: 0,
         });
+        try {
+          updateProfile(auth.currentUser, {
+            displayName: this.userName,
+          })
+        }
+        catch(error) {
+          console.log(error);
+        }
       })
       .catch((error) => {
         const errorCode = error.code;
         const errorMessage = error.message;
-        alert(errorCode+"  "+errorMessage);
         this.$store.commit("addMessage", {
           text: `ユーザ作成に失敗しました:エラーコード[${errorCode}], ${errorMessage}`,
           risk: 3,
         })
       });
-
-      // async () => {
-      //   try {
-      //     await createUserWithEmailAndPassword(
-      //       auth, 
-      //       this.mailAddress,
-      //       this.password
-      //     ).then((userCredential) => {
-      //       //signed in
-      //       this.$store.commit("addMessage", {
-      //         text: "ユーザを作成しました",
-      //         risk: 0,
-      //       })
-      //       const user = userCredential.user;
-      //       const accessToken = user.accessToken;
-      //       const email = user.mailAddress;
-      //       const uid = user.uid;
-      //       const createdAt = user.createdAt;
-      //       const lastLoginAt = user.lastLoginAt;
-      //       console.log(accessToken);
-      //       console.log(email);
-      //       console.log(uid);
-      //       console.log(createdAt);
-      //       console.log(lastLoginAt);
-      //       this.$router.push("/")
-      //     })
-      //     .catch((error) => {
-      //       this.$store.commit("completeTask");
-      //       const errorCode = error.code;
-      //       const errorMessage = error.message;
-      //       this.$store.commit("addMessage", {
-      //         text: `ユーザ作成に失敗しました:エラーコード[${errorCode}], ${errorMessage}`,
-      //         risk: 3,
-      //       })
-      //     })
-      //   } catch(error) {
-      //     const errorCode = error.code;
-      //     let errorMessage = error.message;
-      //     this.$store.commit("completeTask");
-      //     this.$store.commit("addMessage", {
-      //       text: `ユーザ作成に失敗しました:エラーコード[${errorCode}], ${errorMessage}`,
-      //     });
-      //   }
-      // }
+      this.$store.commit("setTitle", {title:"グループ選択"});
+      this.$router.push('select');
     },
 
   }

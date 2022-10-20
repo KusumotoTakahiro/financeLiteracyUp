@@ -1,9 +1,7 @@
 <template>
-  <div>
-    <div>ユーザページ</div>
-    <div>{{userData}}</div>
-    <div>{{userData}}</div>
-    <div>{{userData}}</div>
+  <div v-if="isLogin">
+    <div v-if="attribute=='parent'">親用ページ</div>
+    <div v-if="attribute=='child'">こども用ページ</div>
     <!-- <div>{{user.Attribute}}</div>
     <div>{{user.balance}}</div> -->
   </div>
@@ -28,6 +26,8 @@ export default {
   data() {
     return {
       userData: null,
+      isLogin: false,
+      attribute: "",
     }
   },
   computed: {
@@ -38,25 +38,39 @@ export default {
   async mounted() {
     // firebase authenticationから現在ログインしているユーザの状態を取る
     let user = await authStateChanged();
-    console.log(user.uid);
-    //func();
-    try {
-      // const q = collection(fireStore, "users");
-      const docRef = doc(fireStore, "users", user.uid);
-      const querySnapshot = await getDoc(docRef);
-      console.log(querySnapshot.data());
-      this.userData = querySnapshot.data().history;
-      // querySnapshot.forEach(doc => {
-      //   console.log(doc.data());
-      // })
+    if (user.uid) {
+      this.isLogin = true;
+      try {
+        const docRef = doc(fireStore, "users", user.uid);
+        const querySnapshot = await getDoc(docRef);
+        this.attribute = querySnapshot.data().attribute;
+      }
+      catch(error) {
+        console.log(error);
+      }
     }
-    catch(error) {
-      console.log(error)
+    else {
+      this.$store.commit("addMessage", {
+        text: "ログインしてください",
+        risk: 3,
+      })
+      this.$router.push('/');
     }
-
-
-    
-    
+    // console.log(user.uid);
+    // //func();
+    // try {
+    //   // const q = collection(fireStore, "users");
+    //   
+    //   
+    //   console.log(querySnapshot.data());
+    //   
+    //   // querySnapshot.forEach(doc => {
+    //   //   console.log(doc.data());
+    //   // })
+    // }
+    // catch(error) {
+    //   console.log(error)
+    // }
   },
   methods: {
     

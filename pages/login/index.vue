@@ -116,6 +116,16 @@ import {
   sendEmailVerification,
 } from "firebase/auth";
 import * as func from "~/plugins/myPlugins";
+import {
+  collection,
+  doc,
+  setDoc,
+  updateDoc,
+  getDoc,
+} from "firebase/firestore";
+import {
+  fireStore,
+} from "~/plugins/firebase";
 
 export default {
   name: 'LoginPage',
@@ -132,6 +142,7 @@ export default {
       isLogin: true,
       showPass: false,
       initialized: false,
+      userUID: null,
 
       errorCodes: {
         "auth/email-already-in-use": {
@@ -245,16 +256,26 @@ export default {
               this.password
             )
             .then(res => {
-              // console.log(res);
+              //console.log(res);
               // console.log(res.user.accessToken);
               let token = res.user.accessToken;
               this.$store.commit("setIdToken", token);
+              this.userUID = res.user.uid;
             })
             this.$store.commit("addMessage", {
               text: "ログインしました",
               risk: 0,
             });
-            this.$router.push("/user");
+            try {
+              const docRef = doc(fireStore, "users", this.userUID);
+              const querySnapshot = await getDoc(docRef);
+              const rPath = querySnapshot.data().group;
+              this.$router.push(`/room/${rPath}`);
+            }
+            catch(error) {
+              console.log('error in login page');
+              console.log(error);
+            }
           } catch(error) {
             const errorCode = error.code;
             let errorMessage = error.message;

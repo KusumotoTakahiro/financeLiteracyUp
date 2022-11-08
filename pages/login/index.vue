@@ -270,7 +270,7 @@ export default {
               const docRef = doc(fireStore, "users", this.userUID);
               const querySnapshot = await getDoc(docRef);
               const rPath = querySnapshot.data().group;
-              this.$router.push(`/room/${rPath}`);
+              this.$router.push(`/room`);
             }
             catch(error) {
               console.log('error in login page');

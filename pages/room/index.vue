@@ -19,6 +19,7 @@
           color=""
         >{{item.title}}</v-card>
       </div>
+      <v-btn @click="test()">test go button</v-btn>
       <div>user.attribute : {{attribute}}</div>
       <div>room.name : {{roomName}}</div>
     </div>
@@ -54,43 +55,43 @@ export default {
           icon: "mdi-hexagon-slice-3",
           title: this.attribute==="child"? "ワーク":"ワーク追加",
           to: this.attribute==="child"? 
-            `/room/${this.roomPath}/work/c.vue` 
-            : `room/${this.roomPath}/work/p.vue`,
+            `/room/work/c` 
+            : `room/work/p`,
         },
         {
           icon: "mdi-hexagon-slice-3",
           title: this.attribute==="child"? "ショップ":"ショップ追加",
           to: this.attribute==="child"? 
-            `/room/${this.roomPath}/shop/c.vue` 
-            : `room/${this.roomPath}/shop/p.vue`,
+            `/room/shop/c` 
+            : `room/shop/p`,
         },
         {
           icon: "mdi-hexagon-slice-3",
           title: this.attribute==="child"? "ばっきん":"ばっきん追加",
           to: this.attribute==="child"? 
-            `/room/${this.roomPath}/fine/c.vue` 
-            : `room/${this.roomPath}/fine/p.vue`,
+            `/room/fine/c` 
+            : `room/fine/p`,
         },
         {
           icon: "mdi-hexagon-slice-3",
           title: this.attribute==="child"? "ごほうび":"ごほうび追加",
           to: this.attribute==="child"? 
-            `/room/${this.roomPath}/present/c.vue` 
-            : `room/${this.roomPath}/present/p.vue`,
+            `/room/present/c` 
+            : `room/present/p`,
         },
         {
           icon: "mdi-hexagon-slice-3",
           title: this.attribute==="child"? "ヒストリー":"ヒストリー追加",
           to: this.attribute==="child"? 
-            `/room/${this.roomPath}/history/c.vue` 
-            : `room/${this.roomPath}/history/p.vue`,
+            `/room/history/c` 
+            : `room/history/p`,
         },
         {
           icon: "mdi-hexagon-slice-3",
           title: this.attribute==="child"? "タックス":"タックス追加",
           to: this.attribute==="child"? 
-            `/room/${this.roomPath}/tax/c.vue` 
-            : `room/${this.roomPath}/tax/p.vue`,
+            `/room/tax/c` 
+            : `room/tax/p`,
         },
       ]
     }
@@ -131,7 +132,9 @@ export default {
     }
   },
   methods: {
-    
+    test() {
+      console.log(this.roomPath)
+    }
   }
 }
 </script>

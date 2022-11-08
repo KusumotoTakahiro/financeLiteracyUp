@@ -53,7 +53,7 @@ export default {
       userItems: [
         {
           icon: "mdi-hexagon-slice-3",
-          title: this.attribute==="child"? "ワーク":"ワーク追加",
+          title: this.attribute==="child"? "お手伝い":"お手伝い追加",
           to: this.attribute==="child"? 
             `/room/work/c` 
             : `room/work/p`,
@@ -67,21 +67,21 @@ export default {
         },
         {
           icon: "mdi-hexagon-slice-3",
-          title: this.attribute==="child"? "ばっきん":"ばっきん追加",
+          title: this.attribute==="child"? "罰金":"罰金追加",
           to: this.attribute==="child"? 
             `/room/fine/c` 
             : `room/fine/p`,
         },
         {
           icon: "mdi-hexagon-slice-3",
-          title: this.attribute==="child"? "ごほうび":"ごほうび追加",
+          title: this.attribute==="child"? "ご褒美":"ご褒美追加",
           to: this.attribute==="child"? 
             `/room/present/c` 
             : `room/present/p`,
         },
         {
           icon: "mdi-hexagon-slice-3",
-          title: this.attribute==="child"? "ヒストリー":"ヒストリー追加",
+          title: this.attribute==="child"? "履歴":"履歴",
           to: this.attribute==="child"? 
             `/room/history/c` 
             : `room/history/p`,

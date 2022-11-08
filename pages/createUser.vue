@@ -209,6 +209,7 @@ export default {
       this.$store.commit("startTask");
       const auth = getAuth();
       
+      //子どものときは，user@userid.comの仮メールアドレスで登録する
       if (this.attribute==='child') {
         this.mailAddress = 'user@' + this.userID + '.com';
       }
@@ -239,6 +240,8 @@ export default {
         catch(error) {
           console.log(error);
         }
+        this.$store.commit("setTitle", {title:"グループ選択"});
+        this.$router.push('select');
       })
       .catch((error) => {
         const errorCode = error.code;
@@ -247,9 +250,10 @@ export default {
           text: `ユーザ作成に失敗しました:エラーコード[${errorCode}], ${errorMessage}`,
           risk: 3,
         })
+        this.$store.commit("setTitle", {title:"金融リテラシーを高める!"});
+        this.$router.push('/');
       });
-      this.$store.commit("setTitle", {title:"グループ選択"});
-      this.$router.push('select');
+      
     },
 
   }

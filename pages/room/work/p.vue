@@ -68,7 +68,7 @@
         :headers="headers"
         :items="works"
         :single-select="false"
-        item-key="name"
+        item-key="content"
         show-select
         class="elevation-1"
         fixed-header
@@ -104,6 +104,9 @@ import {
   setDoc,
   updateDoc,
   getDoc,
+  getDocs,
+  addDoc,
+  deleteDoc,
 } from "firebase/firestore";
 import {
   fireStore,
@@ -119,96 +122,111 @@ export default ({
       dialog: false,
       content: "",
       price: 0,
+      isLogin: false,
+      roomPath: null,
+      workCollRef: null,
       selected: [],
       headers: [
         {
           text: 'お手伝い',
           align: 'start',
           sortable: false,
-          value: 'name',
+          value: 'content',
         },
         {
-          text: '報酬',
+          text: '報酬（パパ円）',
           value: 'price'
         }
       ],
-      works: [
-        {
-          name:'ごみ捨て',
-          price:100,
-        },
-        {
-          name:'食洗器をまわす',
-          price:50,
-        },
-        {
-          name:'食洗器を片づける',
-          price:20,
-        },
-        {
-          name:'トイレ床掃除',
-          price:50,
-        },
-        {
-          name:'トイレ便器掃除',
-          price:50,
-        },
-        {
-          name:'風呂湯舟掃除',
-          price:20,
-        },
-        {
-          name:'風呂床掃除',
-          price:30,
-        },
-        {
-          name:'リビング＋台所:掃除機',
-          price:30,
-        },
-        {
-          name:'リビング＋台所:雑巾',
-          price:30,
-        },
-        {
-          name:'階段+廊下掃除:雑巾',
-          price:30,
-        },
-        {
-          name:'子ども部屋モップ＋掃除機',
-          price:50,
-        },
-        {
-          name:'窓掃除一か所（二階は禁止）',
-          price:10,
-        },
-        {
-          name:'大人にお茶を作る',
-          price:20,
-        },
-        {
-          name:'料理の手伝い',
-          price:50,
-        },
-        {
-          name:'水補充(冷蔵庫，加湿器)',
-          price:20,
-        },
-        {
-          name:'洗濯物をたたんでしまう',
-          price:50,
-        },
-      ]
+      works: []
+    }
+  },
+  async mounted() {
+    let user = await authStateChanged();
+    console.log(user);
+    if (user.uid) {
+      this.isLogin=true;
+      try {
+        //ログインユーザの情報から所属するグループのworksの参照を取得
+        const docRef = doc(fireStore, "users", user.uid);
+        const querySnapshot = await getDoc(docRef);
+        const roomPath = querySnapshot.data().group;
+        this.roomPath = roomPath;
+        const workCollRef = collection(fireStore, "groups", roomPath, "works")
+        this.workCollRef = workCollRef;
+        
+        //参照の中からworksを取得して，works(collection)の中のdocumentを全取得
+        const works_all = await getDocs(workCollRef);
+        console.log(works_all)
+        works_all.forEach(doc => {
+          //ここでworksを更新する =>データがテーブルに反映されるはず
+          this.works.push(doc.data())
+        })
+      }
+      catch(error) {
+        console.log(error);
+      }
+    }
+    else {
+      this.$store.commit("addMessage", {
+        text: "ログインしてください",
+        risk: 3, 
+      })
+      this.$router.push('/');
     }
   },
   methods: {
     goToHome() {
       this.$router.push('/room')
     },
-    create_item() { //tableに登録するアイテムの作成
-      
+    async create_item() { //tableに登録するアイテムの作成
+      try {
+        const workRef = await addDoc(this.workCollRef, {
+          content: this.content,
+          price: this.price,        
+        })
+        //console.log(workRef.id);
+      }
+      catch(error) {
+        console.log('create_item error');
+        console.log(error);
+      }
+      this.dialog = false;
+      this.content = "";
+      this.price = null;
+      this.fetch_works();
     },
-    delete_items(){ //既にtableに登録されているアイテムのうち選択したものを削除
-
+    async delete_items(){ //既にtableに登録されているアイテムのうち選択したものを削除
+      let obj = this.selected;
+      for(let key in obj ) {
+        if( obj.hasOwnProperty(key) ) {
+          try {
+            await deleteDoc(doc(fireStore, "groups", this.roomPath, "works", obj[key].id));
+          }
+          catch(error) {
+            console.log(error)
+          }
+        }
+      }
+      await this.fetch_works();
+    },
+    async fetch_works() {
+      console.log('fetch_works')
+      const works_all = await getDocs(this.workCollRef);
+      this.works = [];
+      works_all.forEach(doc => {
+        //ここでworksを更新する =>データがテーブルに反映されるはず
+        try {
+          let data = doc.data();
+          data.id = doc.id;
+          this.works.push(data);
+          console.log(data);
+        }
+        catch(error) {
+          console.log(error);
+        }
+        
+      })
     }
   }
 })

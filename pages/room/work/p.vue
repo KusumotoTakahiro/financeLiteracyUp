@@ -24,6 +24,7 @@
                 <v-text-field
                   v-model="content"
                   clearable
+                  placeholder="お手伝いの内容を記入してください"
                   dense
                   color=""
                   outlined
@@ -44,6 +45,14 @@
                   hide-details=""
                   class="input_case"
                 ></v-text-field>
+                <v-slider
+                  v-model="price"
+                  color="orange"
+                  label="price"
+                  min="1"
+                  max="500"
+                  thumb-label
+                ></v-slider>
                 <v-btn
                   class="black--text mt-5"
                   block
@@ -121,7 +130,7 @@ export default ({
     return {
       dialog: false,
       content: "",
-      price: 0,
+      price: null,
       isLogin: false,
       roomPath: null,
       workCollRef: null,
@@ -180,21 +189,37 @@ export default ({
       this.$router.push('/room')
     },
     async create_item() { //tableに登録するアイテムの作成
-      try {
-        const workRef = await addDoc(this.workCollRef, {
-          content: this.content,
-          price: this.price,        
-        })
-        //console.log(workRef.id);
+      let flag = true;
+      if (!this.is_written(this.content, this.price)) {
+        flag = false;
+        this.$store.commit("addMessage", {
+          text: `記入漏れがあります`,
+          risk: 3,
+        });
       }
-      catch(error) {
-        console.log('create_item error');
-        console.log(error);
+      else if (!this.is_long(this.content)) {
+        flag = false;
+        this.$store.commit("addMessage", {
+          text: `内容の説明が短いです`,
+          risk: 3,
+        });
       }
-      this.dialog = false;
-      this.content = "";
-      this.price = null;
-      this.fetch_works();
+      if (flag) {
+        try {
+          const workRef = await addDoc(this.workCollRef, {
+            content: this.content,
+            price: this.price,        
+          })
+        }
+        catch(error) {
+          console.log('create_item error');
+          console.log(error);
+        }
+        this.dialog = false;
+        this.content = "";
+        this.price = null;
+        this.fetch_works();
+      }
     },
     async delete_items(){ //既にtableに登録されているアイテムのうち選択したものを削除
       let obj = this.selected;
@@ -227,6 +252,21 @@ export default ({
         }
         
       })
+    },
+    is_written(content, price) {
+      let ok = true;
+      if (!content) {
+        ok = false;
+      }
+      if (!price) {
+        ok = false;
+      }
+      return ok;
+    },
+    is_long(content) {
+      let ok = true;
+      if (content.length==1) ok = false;
+      return ok;
     }
   }
 })

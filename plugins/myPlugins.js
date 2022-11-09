@@ -10,3 +10,16 @@ export const isMail = (address) => {
   }
   return false;
 };
+
+export const isNumber = (address) => {
+  if (!address) {
+    return false;
+  }
+  let regex = new RegExp(
+    /^([1-9]\d*|0)$/
+  );
+  if (address.match(regex)) {
+    return true;
+  }
+  return false;
+};

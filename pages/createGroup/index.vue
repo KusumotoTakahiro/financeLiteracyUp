@@ -148,41 +148,22 @@ export default {
       roomObj.password = this.password;
       roomObj.roomId = this.randomStr();
       const roomRef = doc(fireStore, "groups", roomObj.roomId);
+      const memberCollRef = collection(fireStore, "groups", roomObj.roomId, "member");
       await setDoc(roomRef, roomObj);
-      // await setDoc(collection(fireStore, "groups", roomObj.roomId, "fine"), {
-      //   created_at: new Date(),
-      //   item: "22時に寝ない",
-      //   price: 100,
-      // });
-      // await setDoc(collection(fireStore, "groups", roomObj.roomId, "present"), {
-      //   created_at: new Date(),
-      //   item: "一科目で20位以上にランクイン",
-      //   price: 100,
-      // });
-      // await setDoc(collection(fireStore, "groups", roomObj.roomId, "shop"), {
-      //   created_at: new Date(),
-      //   item: "テレビ60分以上/10min",
-      //   price: 30,
-      // });
-      // await setDoc(collection(fireStore, "groups", roomObj.roomId, "work"), {
-      //   created_at: new Date(),
-      //   item: "食洗器をまわす",
-      //   price: 50,
-      // });
-      // await setDoc(collection(fireStore, "groups", roomObj.roomId, "tax"), {
-      //   created_at: new Date(),
-      //   item: "何とか税",
-      //   rate: 5,
-      // });
       let user = await authStateChanged();
       if (user.uid) {
         try {
-          updateDoc(doc(fireStore, "users", user.uid), {
+          await setDoc(doc(memberCollRef), {
+            name: user.displayName,
+            uid: user.uid,
+            attribute: "parent",
+          })
+          await updateDoc(doc(fireStore, "users", user.uid), {
             group: roomObj.roomId,
           })
           .then(()=> {
             this.$store.commit("setTitle", {title:""});
-            this.$router.push(`/room/${roomObj.roomId}`);
+            this.$router.push(`/room`);
           })
         }
         catch(error) {

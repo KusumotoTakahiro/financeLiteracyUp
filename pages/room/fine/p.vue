@@ -16,7 +16,7 @@
           outlined
           shaped
         >
-          <v-card-title class="justify-center">お手伝い追加</v-card-title>
+          <v-card-title class="justify-center">罰則項目追加</v-card-title>
           <v-card-text>
             <template>
               <div>
@@ -24,6 +24,7 @@
                 <v-text-field
                   v-model="content"
                   clearable
+                  placeholder="罰則の内容を記入してください"
                   dense
                   color=""
                   outlined
@@ -33,7 +34,7 @@
                 ></v-text-field>
               </div>
               <div>
-                <div class="form-header">報酬</div>
+                <div class="form-header">罰金</div>
                 <v-text-field
                   v-model="price"
                   clearable
@@ -44,6 +45,16 @@
                   hide-details=""
                   class="input_case"
                 ></v-text-field>
+                <v-slider
+                  v-model="price"
+                  color="orange"
+                  label="price"
+                  min="0"
+                  max="500"
+                  ticks="always"
+                  step="5"
+                  thumb-label
+                ></v-slider>
                 <v-btn
                   class="black--text mt-5"
                   block
@@ -62,13 +73,13 @@
           </v-card-actions>
         </v-card>
       </v-dialog>
-      <v-alert class="justify-center text-center text-h5"> 現在のお手伝い一覧 </v-alert>
+      <v-alert class="justify-center text-center text-h5"> 現在の罰金項目一覧 </v-alert>
       <v-data-table
         v-model="selected"
         :headers="headers"
-        :items="works"
+        :items="fines"
         :single-select="false"
-        item-key="name"
+        item-key="content"
         show-select
         class="elevation-1"
         fixed-header
@@ -104,6 +115,9 @@ import {
   setDoc,
   updateDoc,
   getDoc,
+  getDocs,
+  addDoc,
+  deleteDoc,
 } from "firebase/firestore";
 import {
   fireStore,
@@ -111,104 +125,150 @@ import {
 import {authStateChanged} from '@/plugins/auth'
 
 export default ({
-  name: 'workParentPage',
+  name: 'fineParentPage',
   layout: "default",
 
   data() {
     return {
       dialog: false,
       content: "",
-      price: 0,
+      price: null,
+      isLogin: false,
+      roomPath: null,
+      fineCollRef: null,
       selected: [],
       headers: [
         {
-          text: 'お手伝い',
+          text: '罰則',
           align: 'start',
           sortable: false,
-          value: 'name',
+          value: 'content',
         },
         {
-          text: '報酬',
+          text: '罰金（パパ円）',
           value: 'price'
         }
       ],
-      works: [
-        {
-          name:'ごみ捨て',
-          price:100,
-        },
-        {
-          name:'食洗器をまわす',
-          price:50,
-        },
-        {
-          name:'食洗器を片づける',
-          price:20,
-        },
-        {
-          name:'トイレ床掃除',
-          price:50,
-        },
-        {
-          name:'トイレ便器掃除',
-          price:50,
-        },
-        {
-          name:'風呂湯舟掃除',
-          price:20,
-        },
-        {
-          name:'風呂床掃除',
-          price:30,
-        },
-        {
-          name:'リビング＋台所:掃除機',
-          price:30,
-        },
-        {
-          name:'リビング＋台所:雑巾',
-          price:30,
-        },
-        {
-          name:'階段+廊下掃除:雑巾',
-          price:30,
-        },
-        {
-          name:'子ども部屋モップ＋掃除機',
-          price:50,
-        },
-        {
-          name:'窓掃除一か所（二階は禁止）',
-          price:10,
-        },
-        {
-          name:'大人にお茶を作る',
-          price:20,
-        },
-        {
-          name:'料理の手伝い',
-          price:50,
-        },
-        {
-          name:'水補充(冷蔵庫，加湿器)',
-          price:20,
-        },
-        {
-          name:'洗濯物をたたんでしまう',
-          price:50,
-        },
-      ]
+      fines: []
+    }
+  },
+  async mounted() {
+    let user = await authStateChanged();
+    console.log(user);
+    if (user.uid) {
+      this.isLogin=true;
+      try {
+        //ログインユーザの情報から所属するグループのfinesの参照を取得
+        const docRef = doc(fireStore, "users", user.uid);
+        const querySnapshot = await getDoc(docRef);
+        const roomPath = querySnapshot.data().group;
+        this.roomPath = roomPath;
+        const fineCollRef = collection(fireStore, "groups", roomPath, "fines")
+        this.fineCollRef = fineCollRef;
+        
+        //参照の中からfinesを取得して，fines(collection)の中のdocumentを全取得
+        const fines_all = await getDocs(fineCollRef);
+        console.log(fines_all)
+        fines_all.forEach(doc => {
+          //ここでfinesを更新する =>データがテーブルに反映されるはず
+          this.fines.push(doc.data())
+        })
+      }
+      catch(error) {
+        console.log(error);
+      }
+    }
+    else {
+      this.$store.commit("addMessage", {
+        text: "ログインしてください",
+        risk: 3, 
+      })
+      this.$router.push('/');
     }
   },
   methods: {
     goToHome() {
       this.$router.push('/room')
     },
-    create_item() { //tableに登録するアイテムの作成
-
+    async create_item() { //tableに登録するアイテムの作成
+      let flag = true;
+      if (!this.is_written(this.content, this.price)) {
+        flag = false;
+        this.$store.commit("addMessage", {
+          text: `記入漏れがあります`,
+          risk: 3,
+        });
+      }
+      else if (!this.is_long(this.content)) {
+        flag = false;
+        this.$store.commit("addMessage", {
+          text: `内容の説明が短いです`,
+          risk: 3,
+        });
+      }
+      if (flag) {
+        try {
+          const fineRef = await addDoc(this.fineCollRef, {
+            content: this.content,
+            price: this.price,        
+          })
+        }
+        catch(error) {
+          console.log('create_item error');
+          console.log(error);
+        }
+        this.dialog = false;
+        this.content = "";
+        this.price = null;
+        this.fetch_fines();
+      }
     },
-    delete_items(){ //既にtableに登録されているアイテムのうち選択したものを削除
-
+    async delete_items(){ //既にtableに登録されているアイテムのうち選択したものを削除
+      let obj = this.selected;
+      for(let key in obj ) {
+        if( obj.hasOwnProperty(key) ) {
+          try {
+            await deleteDoc(doc(fireStore, "groups", this.roomPath, "fines", obj[key].id));
+          }
+          catch(error) {
+            console.log(error)
+          }
+        }
+      }
+      await this.fetch_fines();
+    },
+    async fetch_fines() {
+      console.log('fetch_fines')
+      const fines_all = await getDocs(this.fineCollRef);
+      this.fines = [];
+      fines_all.forEach(doc => {
+        //ここでfinesを更新する =>データがテーブルに反映されるはず
+        try {
+          let data = doc.data();
+          data.id = doc.id;
+          this.fines.push(data);
+          console.log(data);
+        }
+        catch(error) {
+          console.log(error);
+        }
+        
+      })
+    },
+    is_written(content, price) {
+      let ok = true;
+      if (!content) {
+        ok = false;
+      }
+      if (!price) {
+        ok = false;
+      }
+      return ok;
+    },
+    is_long(content) {
+      let ok = true;
+      if (content.length==1) ok = false;
+      return ok;
     }
   }
 })

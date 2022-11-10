@@ -240,8 +240,14 @@ export default {
         catch(error) {
           console.log(error);
         }
-        this.$store.commit("setTitle", {title:"グループ選択"});
-        this.$router.push('select');
+        if (this.attribute==="parent") {
+          this.$store.commit("setTitle", {title:"グループ作成"});
+          this.$router.push('createGroup');
+        }
+        else {
+          this.$store.commit("setTitle", {title:"グループ参加"});
+          this.$router.push('joinGroup');
+        }
       })
       .catch((error) => {
         const errorCode = error.code;

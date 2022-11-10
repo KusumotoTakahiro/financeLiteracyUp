@@ -223,6 +223,7 @@ export default {
         const user = userCredential.user;
         console.log(user);
         setDoc(doc(fireStore, "users", user.uid), {
+          name: this.userName,
           attribute: this.attribute,
           balance: 1000,
           group: null,

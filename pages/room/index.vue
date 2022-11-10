@@ -1,6 +1,6 @@
 <template>
-  <div v-if="isLogin">
-    <div>
+  <v-row>
+    <v-col cols="12" sm="12" md="12" lg="12" xl="12">
       <div>確認表示</div>
       <div v-if="attribute=='parent'">親用ページ</div>
       <div v-if="attribute=='child'">こども用ページ</div>
@@ -32,9 +32,8 @@
       <v-btn @click="test()">test go button</v-btn>
       <div>user.attribute : {{attribute}}</div>
       <div>room.name : {{roomName}}</div>
-    </div>
-    
-  </div>
+    </v-col>
+  </v-row>
 </template>
 <script>
 import {getAuth} from 'firebase/auth'
@@ -91,6 +90,11 @@ export default {
           title: "タックス追加",
           to: `room/tax/p`,
         },
+        {
+          icon: "mdi-hexagon-slice-3",
+          title: "ルーム招待",
+          to: `room/invite`,
+        }
       ],
       childItems: [
         {

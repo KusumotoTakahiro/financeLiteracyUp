@@ -1,24 +1,44 @@
 <template>
-  <v-row>
-    <v-col cols="12" sm="12" md="12" lg="12" xl="12">
-      <div>確認表示</div>
-      <div v-if="attribute=='parent'">親用ページ</div>
-      <div v-if="attribute=='child'">こども用ページ</div>
-      <div 
-        class=
-          "
-          d-flex 
-          flex-column 
-          justify-center
-          "
-        >
+  <v-row align-content="center" justify="center">
+    <v-col cols="12" sm="12" md="12" lg="12" xl="12" align="center">
         <div v-if="attribute=='parent'">
           <v-card
-            v-for="item in parentItems"
-            :key="item"
-            :to="item.to"
-            color=""
-          >{{item.title}}</v-card>
+            class="
+              d-flex 
+              align-content-space-around 
+              flex-wrap justify-center 
+              mt-15
+              "
+            flat
+            tile
+            :height="$vuetify.breakpoint.height-200"
+          >
+          <template v-for="item in parentItems">
+          <v-hover v-slot="{ hover }" open-delay="50">
+            <v-card
+              :key="item"
+              :to="item.to"
+              color=""
+              outlined
+              :height="$vuetify.breakpoint.height/6"
+              width="200"
+              class="mx-6 mb-3"
+              :class="{ 'on-hover': hover }"
+              :elevation="hover ? 12 : 4"
+              style="background-color: white;"
+            >
+            <v-card-text class="my-auto" >
+              <v-row justify="center">
+                {{item.title}}
+              </v-row>
+              <v-row justify="center" class="mt-10">
+                <v-icon :color="item.color" large>{{item.icon}}</v-icon>
+              </v-row>
+            </v-card-text>
+            </v-card>
+          </v-hover>
+          </template>
+          </v-card>
         </div>
         <div v-if="attribute=='child'">
           <v-card
@@ -28,8 +48,6 @@
             color=""
           >{{item.title}}</v-card>
         </div>
-      </div>
-      <v-btn @click="test()">test go button</v-btn>
       <div>user.attribute : {{attribute}}</div>
       <div>room.name : {{roomName}}</div>
     </v-col>
@@ -64,36 +82,43 @@ export default {
           icon: "mdi-hexagon-slice-3",
           title: "お手伝い追加",
           to: `room/work/p`,
+          color: "light-blue lighten-1",
         },
         {
-          icon: "mdi-hexagon-slice-3",
+          icon: "mdi-basket",
           title: "ショップ追加",
           to: `room/shop/p`,
+          color: "amber darken-1",
         },
         {
-          icon: "mdi-hexagon-slice-3",
+          icon: "mdi-emoticon-angry-outline",
           title: "罰金追加",
           to: `room/fine/p`,
+          color: "red lighten-1",
         },
         {
-          icon: "mdi-hexagon-slice-3",
+          icon: "mdi-emoticon-outline",
           title: "ご褒美追加",
           to: `room/present/p`,
+          color: "deep-orange lighten-3",
         },
         {
-          icon: "mdi-hexagon-slice-3",
+          icon: "mdi-clipboard-text-clock",
           title: "履歴",
           to: `room/history/p`,
+          color: "teal lighten-2",
         },
         {
-          icon: "mdi-hexagon-slice-3",
+          icon: "mdi-cash-100",
           title: "タックス追加",
           to: `room/tax/p`,
+          color: "brown lighten-3",
         },
         {
-          icon: "mdi-hexagon-slice-3",
+          icon: "mdi-account-multiple-plus",
           title: "ルーム招待",
           to: `room/invite`,
+          color: "blue-grey darken-1",
         }
       ],
       childItems: [
@@ -172,13 +197,14 @@ export default {
       this.$router.push('/');
     }
   },
-  methods: {
-    test() {
-      console.log(this.roomPath)
-    }
-  }
 }
 </script>
 <style scoped>
+.v-card {
+  transition: opacity .7s ease-in-out;
+}
 
+.v-card.on-hover {
+  color: red;
+}
 </style>

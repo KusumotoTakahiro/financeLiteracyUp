@@ -23,3 +23,16 @@ export const isNumber = (address) => {
   }
   return false;
 };
+
+export const isHalf = (text) => {
+  if (!text) {
+    return false;
+  }
+  let regex = new RegExp(
+    /^[a-zA-Z]+$/
+  );
+  if (text.match(regex)) {
+    return true;
+  }
+  return false;
+};

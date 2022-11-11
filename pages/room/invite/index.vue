@@ -83,6 +83,7 @@ import {
   doc,  
 	serverTimestamp,
 	addDoc,
+	setDoc,
 } from 'firebase/firestore'
 
 
@@ -131,26 +132,26 @@ export default {
 	if (user.uid) {
 	  this.isLogin = true;
 	  try {
-		const docRef = doc(fireStore, "users", user.uid);
-		const querySnapshot = await getDoc(docRef);
-		this.attribute = querySnapshot.data().attribute;
-		this.roomPath = querySnapshot.data().group;
-		console.log(this.roomPath);
-		if (!this.roomPath) {
-		  this.$store.commit("addMessage", {
-			text: "不正入室です.グループ参加後に入室してください",
-			risk: 3,
-		  })
-		  this.$router.push('/')
-		}
-		const groupRef = doc(fireStore, "groups", this.roomPath);
-		const groupItems = await getDoc(groupRef);
-		this.roomName = groupItems.data().name;
-		console.log(this.roomName);
-		this.userName = user.displayName;
+			const docRef = doc(fireStore, "users", user.uid);
+			const querySnapshot = await getDoc(docRef);
+			this.attribute = querySnapshot.data().attribute;
+			this.roomPath = querySnapshot.data().group;
+			console.log(this.roomPath);
+			if (!this.roomPath) {
+				this.$store.commit("addMessage", {
+				text: "不正入室です.グループ参加後に入室してください",
+				risk: 3,
+				})
+				this.$router.push('/')
+			}
+			const groupRef = doc(fireStore, "groups", this.roomPath);
+			const groupItems = await getDoc(groupRef);
+			this.roomName = groupItems.data().name;
+			console.log(this.roomName);
+			this.userName = user.displayName;
 	  }
 	  catch(error) {
-		console.log(error);
+		  console.log(error);
 	  }
 	}
 	else {
@@ -190,13 +191,15 @@ export default {
         if( obj.hasOwnProperty(key) ) {
 					console.log(obj[key].uid)
           try {
-            const comRef = collection(fireStore, "users", obj[key].uid, "comminicate");
-						const invite = await addDoc(comRef, {
+						const uid = obj[key].uid;
+            const comRef = doc(fireStore, "users", uid, "comminicate", uid);
+						const invite = await setDoc(comRef, {
 							forWhat: "invite",
 							forWhom: obj[key].name,
 							fromWhom: this.user.displayName,
 							fromWhomUid: this.user.uid,
 							roomPath: this.roomPath,
+							roomName: this.roomName,
 							time: serverTimestamp(),
 						})
 						alert(obj[key].name+'を招待しました');

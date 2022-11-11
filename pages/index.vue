@@ -1,22 +1,60 @@
 <template>
-  <v-container fill-height>
-    <v-row justify="center" >
-      <v-btn 
-        @click="createUser()"
-        elevation="3"
-        width="150px"
-        height="70px"
-        class="mx-auto"
-      >新規ユーザ</v-btn>
-      <v-btn 
-        @click="goToLogin()" 
-        elevation="3"
-        width="150px"
-        height="70px"
-        class="mx-auto"
-      >ログイン</v-btn>
-    </v-row>
-  </v-container>
+  <v-row align-content="center" justify="center">
+    <v-col cols="12" sm="12" md="12" lg="12" xl="12" align="center">
+      <v-alert class="justify-center text-center text-h5"> 金融リテラシーを高める! </v-alert>
+      <v-card
+        class="
+          d-flex 
+          align-content-space-around 
+          flex-wrap 
+          justify-space-around 
+          mt-15
+          "
+        flat
+        tile
+        :height="$vuetify.breakpoint.height-200"
+      >
+      <v-card
+        to="/createUser"
+        color=""
+        outlined
+        :height="$vuetify.breakpoint.height/6"
+        width="200"
+        class="mx-15 mb-3"
+        elevation="4"
+        style="background-color: white;"
+      >
+        <v-card-text class="my-auto black--text text-h6">
+          <v-row justify="center">
+            新規ユーザ
+          </v-row>
+          <v-row justify="center" class="mt-10">
+            <v-icon color="orange lighten-1" large>mdi-account-plus</v-icon>
+          </v-row>
+        </v-card-text>
+      </v-card>
+      <v-card
+        to="/login"
+        color=""
+        outlined
+        :height="$vuetify.breakpoint.height/6"
+        width="200"
+        class="mx-15 mb-3"
+        elevation="4"
+        style="background-color: white;"
+      >
+        <v-card-text class="my-auto black--text text-h6">
+          <v-row justify="center">
+            ログイン
+          </v-row>
+          <v-row justify="center" class="mt-10">
+            <v-icon color="orange lighten-1" large>mdi-account-lock-open</v-icon>
+          </v-row>
+        </v-card-text>
+      </v-card>
+      </v-card>
+    </v-col>
+  </v-row>
 </template>
 <script>
 export default {

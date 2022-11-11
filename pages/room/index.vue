@@ -6,7 +6,8 @@
             class="
               d-flex 
               align-content-space-around 
-              flex-wrap justify-center 
+              flex-wrap 
+              justify-center 
               mt-15
               "
             flat

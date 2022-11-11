@@ -188,6 +188,15 @@ export default {
         }
         return;
       }
+      if (!func.isHalf(this.userID) && this.attribute==='child') {
+        if (force) {
+          this.$store.commit("addMessage", {
+            text: `ユーザIDは半角英数字で記入してください`,
+            risk: 3,
+          });
+        }
+        return;
+      }
       if (!this.password) {
         if (force) {
           this.$store.commit("addMessage", {

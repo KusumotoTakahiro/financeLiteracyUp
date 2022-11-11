@@ -46,12 +46,47 @@
           </v-card>
         </div>
         <div v-if="attribute=='child'">
+          <v-alert class="justify-center text-center text-h4"> {{this.roomName}} </v-alert>
           <v-card
-            v-for="item in childItems"
-            :key="item"
-            :to="item.to"
-            color=""
-          >{{item.title}}</v-card>
+            class="
+              d-flex 
+              align-content-space-around 
+              flex-wrap 
+              justify-center 
+              mt-5
+              "
+            flat
+            tile
+            :height="$vuetify.breakpoint.height-200"
+          >
+          <template v-for="item in childItems">
+            <v-hover
+              v-slot="{hover}"
+              :key="item"
+              open-delay="50"
+            >
+              <v-card
+                :key="item"
+                :to="item.to"
+                outlined
+                width="200"
+                class="mx-6 mb-3"
+                :class="{ 'on-hover' : hover}"
+                :elevation="hover ? 12 : 4"
+                style="background-color: white;"
+              >
+                <v-card-text class="my-auto">
+                  <v-row justify="center">
+                    {{item.title}}
+                  </v-row>
+                  <v-row justify="center" class="mt-10">
+                    <v-icon :color="item.color" large>{{item.icon}}</v-icon>
+                  </v-row>
+                </v-card-text>
+              </v-card>
+            </v-hover>
+          </template>
+          </v-card>
         </div>
       <div>user.attribute : {{attribute}}</div>
       <div>room.name : {{roomName}}</div>
@@ -80,6 +115,7 @@ export default {
       isLogin: false,
       attribute: "",
       userName: "",
+      balance: 0,
       roomPath: null,
       roomName: null,
       parentItems: [
@@ -108,16 +144,16 @@ export default {
           color: "deep-orange lighten-3",
         },
         {
-          icon: "mdi-clipboard-text-clock",
-          title: "履歴",
-          to: `room/history/p`,
-          color: "teal lighten-2",
-        },
-        {
           icon: "mdi-cash-100",
           title: "タックス追加",
           to: `room/tax/p`,
           color: "brown lighten-3",
+        },
+        {
+          icon: "mdi-clipboard-text-clock",
+          title: "履歴",
+          to: `room/history/p`,
+          color: "teal lighten-2",
         },
         {
           icon: "mdi-account-multiple-plus",
@@ -136,32 +172,38 @@ export default {
         {
           icon: "mdi-hexagon-slice-3",
           title: "お手伝い",
-          to: `/room/work/c` 
+          to: `/room/work/c` ,
+          color: "light-blue lighten-1",
         },
         {
-          icon: "mdi-hexagon-slice-3",
+          icon: "mdi-basket",
           title: "ショップ",
           to: `room/shop/c`,
+          color: "amber darken-1",
         },
         {
-          icon: "mdi-hexagon-slice-3",
+          icon: "mdi-emoticon-angry-outline",
           title: "罰金",
           to: `room/fine/c`,
+          color: "red lighten-1",
         },
         {
-          icon: "mdi-hexagon-slice-3",
+          icon: "mdi-emoticon-outline",
           title: "ご褒美",
           to: `room/present/c`,
+          color: "deep-orange lighten-3",
         },
         {
-          icon: "mdi-hexagon-slice-3",
-          title: "履歴",
-          to: `/room/history/c` 
-        },
-        {
-          icon: "mdi-hexagon-slice-3",
+          icon: "mdi-cash-100",
           title: "タックス",
           to: `room/tax/c`,
+          color: "brown lighten-3",
+        },
+        {
+          icon: "mdi-clipboard-text-clock",
+          title: "履歴",
+          to: `/room/history/c`,
+          color: "teal lighten-2",
         },
       ]
     }
@@ -181,6 +223,7 @@ export default {
         const docRef = doc(fireStore, "users", user.uid);
         const querySnapshot = await getDoc(docRef);
         this.attribute = querySnapshot.data().attribute;
+        this.balance = querySnapshot.data().balance;
         this.roomPath = querySnapshot.data().group;
         console.log(this.roomPath);
         if (!this.roomPath) {

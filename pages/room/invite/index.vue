@@ -188,6 +188,12 @@ export default {
 		async invite_user() {
 			console.log('invite_user');
 			let obj = this.selected;
+			if (obj.length===0) {
+				this.$store.commit("addMessage", {
+					text: "招待する人が選択されていません。",
+					risk: 3,
+				})
+			}
 			for(let key in obj ) {
         if( obj.hasOwnProperty(key) ) {
 					console.log(obj[key].uid)

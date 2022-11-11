@@ -1,19 +1,21 @@
 <template>
   <v-row align-content="center" justify="center">
-    <v-col cols="12" sm="12" md="12" lg="12" xl="12" align="center">
+    <v-col cols="12" xs="12" sm="12" md="12" lg="12" xl="12" align="center">
         <div v-if="attribute=='parent'">
-          <v-alert class="justify-center text-center text-h4"> {{this.roomName}} </v-alert>
+          <v-card>
+            <v-alert class="justify-center text-center text-h4"> {{this.roomName}} </v-alert>
+          </v-card>
           <v-card
             class="
               d-flex 
-              align-content-space-around 
+              align-content-space-around
               flex-wrap 
               justify-center 
-              mt-5
+              mt-1
               "
             flat
             tile
-            :height="$vuetify.breakpoint.height-200"
+            :height="$vuetify.breakpoint.height"
           >
           <template v-for="item in parentItems">
           <v-hover 
@@ -26,8 +28,9 @@
               :to="item.to"
               color=""
               outlined
-              width="200"
-              class="mx-6 mb-3"
+              :width="width"
+              :height="height"
+              class="mx-6"
               :class="{ 'on-hover': hover }"
               :elevation="hover ? 12 : 4"
               style="background-color: white;"
@@ -36,7 +39,7 @@
               <v-row justify="center">
                 {{item.title}}
               </v-row>
-              <v-row justify="center" class="mt-10">
+              <v-row justify="center" class="mt-7">
                 <v-icon :color="item.color" large>{{item.icon}}</v-icon>
               </v-row>
             </v-card-text>
@@ -46,18 +49,25 @@
           </v-card>
         </div>
         <div v-if="attribute=='child'">
+          <v-card>
           <v-alert class="justify-center text-center text-h4"> {{this.roomName}} </v-alert>
+          <v-alert class="jsutify-center text-center balance">
+            <div class="d-inline text-body-2 mr-5">残高</div>
+            <div class="d-inline text-h4">{{this.balance}}</div>
+            <div class="d-inline text-body-2">パパ円</div>
+          </v-alert>
+          </v-card>
           <v-card
             class="
               d-flex 
               align-content-space-around 
               flex-wrap 
-              justify-center 
+              justify-space-around
               mt-5
               "
             flat
             tile
-            :height="$vuetify.breakpoint.height-200"
+            :height="$vuetify.breakpoint.height"
           >
           <template v-for="item in childItems">
             <v-hover
@@ -69,8 +79,9 @@
                 :key="item"
                 :to="item.to"
                 outlined
-                width="200"
-                class="mx-6 mb-3"
+                :width="width"
+                :height="height"
+                class="mx-6"
                 :class="{ 'on-hover' : hover}"
                 :elevation="hover ? 12 : 4"
                 style="background-color: white;"
@@ -121,7 +132,7 @@ export default {
       parentItems: [
         {
           icon: "mdi-hexagon-slice-3",
-          title: "お手伝い追加",
+          title: "お仕事追加",
           to: `room/work/p`,
           color: "light-blue lighten-1",
         },
@@ -171,7 +182,7 @@ export default {
       childItems: [
         {
           icon: "mdi-hexagon-slice-3",
-          title: "お手伝い",
+          title: "お仕事",
           to: `/room/work/c` ,
           color: "light-blue lighten-1",
         },
@@ -211,6 +222,24 @@ export default {
   computed: {
     user: function() { 
       return this.$store.getters.getUser; 
+    },
+    width: function() {
+      switch (this.$vuetify.breakpoint.name) {
+        case 'xs': return 130;
+        case 'sm': return 200;
+        case 'md': return 250;
+        case 'lg': return 300;
+        case 'xl': return 300;
+      }
+    },
+    height: function() {
+      switch (this.$vuetify.breakpoint.name) {
+        case 'xs': return 100;
+        case 'sm': return 100;
+        case 'md': return 150;
+        case 'lg': return 200;
+        case 'xl': return 250;
+      }
     }
   },
   async mounted() {
@@ -260,5 +289,10 @@ export default {
 
 .v-card.on-hover {
   color: red;
+}
+
+.balance {
+  background-color: aquamarine;
+  width: 100%
 }
 </style>

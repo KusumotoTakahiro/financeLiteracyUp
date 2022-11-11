@@ -5,20 +5,34 @@
       persistent
       hide-overlay
       no-click-animation
-      content-class="rounded-lg elevation-0"
+      content-class="rounded-lg elevation-3"
       transition="dialog-bottom-transition"
     >
       <v-card>
+        <v-alert 
+          class="
+            justify-center 
+            text-center 
+            text-h6"
+            v-if="isLogin && !isSignedIn"
+        > ログイン</v-alert>
+        <v-alert 
+          class="
+            justify-center 
+            text-center 
+            text-h6"
+            v-else-if="isMissingPass && !isSignedIn"
+        > パスワード再設定</v-alert>
         <v-card-text>
-          <div v-if="isLogin && !isSignedIn" class="d-flex justify-center pa-5">
-            <!-- <v-img max-width="250" :src="logoImage" class="justify-center" /> -->
-          </div>
           <template v-if="isLogin && !isSignedIn">
             <template v-if="lateShow && loginType === 'email'">
               <div v-if="!isSignedIn">
-                <div class="form-header">メールアドレス</div>
+                <div 
+                  v-if="attribute==='parent'"
+                  class="form-header">メールアドレス</div>
                 <v-text-field
                   v-model="mailAddress"
+                  v-if="attribute==='parent'"
                   clearable
                   dense
                   color=""
@@ -26,6 +40,22 @@
                   type="email"
                   hide-details=""
                   prepend-inner-icon="mdi-email"
+                  class="input_case"
+                ></v-text-field>
+                <div 
+                  v-if="attribute==='child'"
+                  class="form-header">ユーザID</div>
+                <v-text-field
+                  v-model="userid"
+                  v-if="attribute==='child'"
+                  clearable
+                  dense
+                  color=""
+                  outlined
+                  type="text"
+                  hide-details=""
+                  prepend-inner-icon="mdi-account-key"
+                  class="input_case"
                 ></v-text-field>
                 <div class="form-header">パスワード</div>
                 <v-text-field
@@ -38,9 +68,27 @@
                   prepend-inner-icon="mdi-key"
                   outlined
                   counter="20"
+                  class="input_case"
                   @click:append="showPass = !showPass"
                   @keyup.enter="login"
                 ></v-text-field>
+                <v-row justify="center">
+                  <v-radio-group
+                    v-model="attribute"
+                    row
+                  >
+                    <v-radio
+                      label="親ロール"
+                      value="parent"
+                      class="mx-7"
+                    ></v-radio>
+                    <v-radio
+                      label="子供ロール"
+                      value="child"
+                      class="mx-7"
+                    ></v-radio>
+                  </v-radio-group>
+                </v-row>
                 <v-btn
                   class="black--text"
                   block
@@ -50,7 +98,7 @@
                 >ログイン</v-btn>
               </div>
             </template> 
-            <div class="pt-3">
+            <div class="pt-3" v-if="attribute==='parent'">
               <v-btn
                 text
                 block
@@ -75,6 +123,7 @@
               outlined
               type="email"
               prepend-inner-icon="mdi-email"
+              class="input_case"
             ></v-text-field>
             <div class="pt-3">
               <v-btn
@@ -143,6 +192,8 @@ export default {
       showPass: false,
       initialized: false,
       userUID: null,
+      attribute: 'parent',
+      userid: null,
 
       errorCodes: {
         "auth/email-already-in-use": {
@@ -225,24 +276,47 @@ export default {
       this.$router.push("/");
     },
     login(force = true) {
-      if (!this.mailAddress || !this.password) {
-        if (force) {
-          this.$store.commit("addMessage", {
-            text: `メールアドレス，パスワードを入力してください`,
-            risk: 3,
-          });
+      if (this.attribute==='parent') {
+        if (!this.mailAddress || !this.password) {
+          if (force) {
+            this.$store.commit("addMessage", {
+              text: `メールアドレス，パスワードを入力してください`,
+              risk: 3,
+            });
+          }
+          return;
         }
-        return;
-      }
-      if (!func.isMail(this.mailAddress)) {
-        if (force) {
-          this.$store.commit("addMessage", {
-            text: `メールアドレスの形式が不正です`,
-            risk: 3,
-          });
+        if (!func.isMail(this.mailAddress)) {
+          if (force) {
+            this.$store.commit("addMessage", {
+              text: `メールアドレスの形式が不正です`,
+              risk: 3,
+            });
+          }
+          return;
         }
-        return;
       }
+      if (this.attribute==='child') {
+        if (!func.isHalf(this.userid)) {
+          if (force) {
+            this.$store.commit("addMessage", {
+              text: `ユーザIDは半角で入力してください`,
+              risk: 3, 
+            })
+          }
+        }
+        if (!this.userid) {
+          if (force) {
+            this.$store.commit("addMessage", {
+              text: `ユーザIDを入力してください`,
+              risk: 3,
+            })
+          }
+        }
+        //子どものときは，user@userid.comが仮のメールアドレスになっている．
+        this.mailAddress = 'user@' + this.userid + '.com';
+      }
+
       this.$store.commit("startLogin");
       this.$store.commit("startTask");
       const auth = getAuth();
@@ -270,7 +344,12 @@ export default {
               const docRef = doc(fireStore, "users", this.userUID);
               const querySnapshot = await getDoc(docRef);
               const rPath = querySnapshot.data().group;
-              this.$router.push(`/room`);
+              if (!rPath && this.attribute==='child') {
+                this.$router.push('/joinGroup'); //ルームが決まるまでの仮待機場所
+              }
+              else {
+                this.$router.push(`/room`);
+              }
             }
             catch(error) {
               console.log('error in login page');
@@ -354,5 +433,9 @@ export default {
 }
 .require {
   color: red;
+}
+.input_case {
+  font-family: serif;
+  font-size: 0.7rem;
 }
 </style>

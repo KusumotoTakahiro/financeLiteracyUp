@@ -18,7 +18,6 @@
         to="/createUser"
         color=""
         outlined
-        :height="$vuetify.breakpoint.height/6"
         width="200"
         class="mx-15 mb-3"
         elevation="4"
@@ -37,7 +36,6 @@
         to="/login"
         color=""
         outlined
-        :height="$vuetify.breakpoint.height/6"
         width="200"
         class="mx-15 mb-3"
         elevation="4"

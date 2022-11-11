@@ -1,7 +1,7 @@
 <template>
   <v-app >
     <v-main>
-      <my-title></my-title>
+      <!-- <my-title></my-title> -->
       <nuxt></nuxt>
       <my-alert></my-alert>
     </v-main>

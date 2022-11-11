@@ -9,13 +9,14 @@
 				>
 					<v-text-field
 						label="検索"
-						placeholder="佐賀太郎"
+						placeholder="ユーザ名を入力"
 						v-model="forWhom"
-						hint="招待するユーザのユーザ名を入力してください"
 						outlined
 						:height="height/15"
 						width="600"
 						@keyup.enter="search_user"
+						append-icon="mdi-magnify"
+						@click:append="search_user"
 					></v-text-field>
 					<v-row>
 						<v-btn

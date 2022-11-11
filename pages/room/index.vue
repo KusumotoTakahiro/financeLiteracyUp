@@ -2,26 +2,30 @@
   <v-row align-content="center" justify="center">
     <v-col cols="12" sm="12" md="12" lg="12" xl="12" align="center">
         <div v-if="attribute=='parent'">
+          <v-alert class="justify-center text-center text-h4"> {{this.roomName}} </v-alert>
           <v-card
             class="
               d-flex 
               align-content-space-around 
               flex-wrap 
               justify-center 
-              mt-15
+              mt-5
               "
             flat
             tile
             :height="$vuetify.breakpoint.height-200"
           >
           <template v-for="item in parentItems">
-          <v-hover v-slot="{ hover }" open-delay="50">
+          <v-hover 
+            v-slot="{ hover }" 
+            :key="item"
+            open-delay="50"
+          >
             <v-card
               :key="item"
               :to="item.to"
               color=""
               outlined
-              :height="$vuetify.breakpoint.height/6"
               width="200"
               class="mx-6 mb-3"
               :class="{ 'on-hover': hover }"
@@ -119,6 +123,12 @@ export default {
           icon: "mdi-account-multiple-plus",
           title: "ルーム招待",
           to: `room/invite`,
+          color: "blue-grey darken-1",
+        },
+        {
+          icon: "mdi-cog-outline",
+          title: "ルーム設定",
+          to: `room/setting`,
           color: "blue-grey darken-1",
         }
       ],

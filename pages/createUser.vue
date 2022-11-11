@@ -5,14 +5,28 @@
     persistent
     hide-overlay
     no-click-animation
-    content-class="rounded-lg elevation-0"
+    content-class="rounded-lg elevation-3"
     transition="dialog-bottom-transition"
   >
     <v-card>
+      <v-alert 
+        class="
+          justify-center 
+          text-center 
+          text-h6"
+      > ユーザ登録</v-alert>
+      <div 
+        v-if="attribute=='child'"
+        class="
+          justify-center 
+          text-center 
+          red--text
+          mt-n3
+          original-font-size
+          "
+        >子供ロールではパスワードが再発行できません。<br>
+        必ず忘れないようにしてください．</div>
       <v-card-text>
-        <div class="d-flex justify-center pa-5">
-          <!-- <v-img max-width="250" :src="logoImage" class="justify-center" /> -->
-        </div>
         <template>
           <div>
             <div class="form-header">ユーザネーム</div>
@@ -87,23 +101,20 @@
                 ></v-radio>
               </v-radio-group>
             </v-row>
-            <v-btn
-              class="black--text"
-              block
-              height="40"
-              color=""
-              @click="createUser()"
-            >登録</v-btn>
+            <v-row align="center" justify="space-around">
+              <v-btn
+                class="black--text"
+                height="40"
+                @click="createUser()"
+              >　登 録　</v-btn>
+              <v-btn
+                class="black--text"
+                height="40"
+                @click="goToHome()"
+              >Homeに戻る</v-btn>
+            </v-row>
           </div> 
         </template>
-        <v-row justify="end">
-          <v-btn
-            class="black--text mt-15 "
-            height="40"
-            color=""
-            @click="goToHome()"
-          >Homeに戻る</v-btn>
-        </v-row>
       </v-card-text>
     </v-card>
   </v-dialog>
@@ -282,5 +293,8 @@ export default {
   top: 20px;
   width:500px;
   left: calc(50% - 250px);
+}
+.original-font-size {
+  font-size: 0.6rem;
 }
 </style>

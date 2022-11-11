@@ -16,7 +16,6 @@
           <v-card
             @click.stop="dialog1=true; dialog2=false"
             outlined
-            :height="$vuetify.breakpoint.height/6"
             width="200"
             class="mb-3"
             elevation="4"
@@ -34,7 +33,6 @@
           <v-card
             @click.stop="dialog1=false; dialog2=true;"
             outlined
-            :height="$vuetify.breakpoint.height/6"
             width="200"
             class="mx-1 mb-3"
             elevation="4"

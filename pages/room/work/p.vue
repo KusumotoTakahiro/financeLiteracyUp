@@ -171,7 +171,9 @@ export default ({
         console.log(works_all)
         works_all.forEach(doc => {
           //ここでworksを更新する =>データがテーブルに反映されるはず
-          this.works.push(doc.data())
+          let data = doc.data();
+          data.id = doc.id;
+          this.works.push(data);
         })
       }
       catch(error) {

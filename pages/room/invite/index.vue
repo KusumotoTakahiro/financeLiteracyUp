@@ -48,7 +48,7 @@
 							:headers="headers"
 							:items="users"
 							:single-select="false"
-							item-key="content"
+							item-key="uid"
 							show-select
 							class="elevation-1"
 							fixed-header
@@ -172,7 +172,7 @@ export default {
 				users_all.forEach(doc => {
 					//検索名と完全一致
 					if (doc.data().name===this.forWhom) {
-						let one_user = [];
+						let one_user = {};
 						one_user.uid = doc.id;
 						one_user.name = doc.data().name;
 						one_user.attribute = doc.data().attribute;

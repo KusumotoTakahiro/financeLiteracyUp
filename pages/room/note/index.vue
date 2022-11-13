@@ -366,7 +366,7 @@ export default ({
 				case "shop":
 					ref = doc(fireStore, "groups", this.roomPath, "shops", did);
 					break;
-				case "fines":
+				case "fine":
 					ref = doc(fireStore, "groups", this.roomPath, "fines", did);
 					break;
 				case "apply": //子供からの参加申請もここで受け付ける．今は未実装.
@@ -387,7 +387,7 @@ export default ({
 				case "shop":
 					original_price = - original_price;
 					break;
-				case "fines":
+				case "fine":
 					original_price = - original_price;
 					break;
 				default:

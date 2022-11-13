@@ -23,7 +23,7 @@
 					:headers="headers"
 					:items="works"
 					:single-select="false"
-					item-key="content"
+					item-key="id"
 					show-select
 					class="elevation-1"
 					fixed-header
@@ -55,29 +55,30 @@
         transition="dialog-bottom-transition"
 				persistent
 			>
-			<v-alert
-			class="justify-center text-center text-body-2"
-    >
-      上記内容を達成したと報告します．
-			<br/>よろしいですか？
-    </v-alert>
-		
-			<v-row 
-				class="mt-3 mb-3 mx-auto"
-				align-content="center" 
-				justify="space-around" 
-				style="height:40px">
-				<v-btn
-					class="black--text"
-					height="40"
-					@click="reportProgress()"
-				>はい</v-btn>
-				<v-btn
-					class="black--text px-2"
-					height="40"
-					@click="cdialog=false"
-				>いいえ</v-btn>
-			</v-row>
+      <div style="background-color: white;">
+        <v-alert
+          class="justify-center text-center text-body-2"
+        >
+          上記内容を達成したと報告します．
+          <br/>よろしいですか？
+        </v-alert>
+        <v-row 
+          class="mt-3 mb-0 mx-auto pb-5"
+          align-content="center" 
+          justify="space-around" 
+          style="height:40px">
+          <v-btn
+            class="black--text"
+            height="40"
+            @click="reportProgress()"
+          >はい</v-btn>
+          <v-btn
+            class="black--text px-2"
+            height="40"
+            @click="cdialog=false"
+          >いいえ</v-btn>
+        </v-row>
+      </div>
 			</v-dialog>
 		</v-col>
 	</v-row>

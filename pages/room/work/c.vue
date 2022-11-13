@@ -37,7 +37,7 @@
 					<v-btn
 						class="black--text"
 						height="40"
-						@click="cdialog=true"
+						@click="report()"
 					>達成報告</v-btn>
 					<v-btn
 						class="black--text px-2"
@@ -170,6 +170,18 @@ export default ({
 		goToHome() {
 			this.$router.push('/room');
 		},
+		report() {
+			let s = this.selected.length;
+			if (s>0) {
+				this.cdialog = true;
+			}
+			else {
+				this.$store.commit("addMessage", {
+					text: "報告内容が選択されていません",
+					risk: 3, 
+				})
+			}
+		},
 		async reportProgress() {
 			console.log('report progress')
 			let obj = this.selected;
@@ -181,6 +193,7 @@ export default ({
 					const docRef = await addDoc(comcoll, {
 						type: "work",
 						did: obj[key].id, //documentID
+						content: obj[key].content,
 						confirmed: false, //確認済みか
 						accept: false,   //受理されたか
 						reporter: this.user.uid, 

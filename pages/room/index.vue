@@ -161,6 +161,12 @@ export default {
           color: "brown lighten-3",
         },
         {
+          icon: "mdi-alarm-note",
+          title: "通知",
+          to: `room/note`,
+          color: "pink lighten-1"
+        },
+        {
           icon: "mdi-clipboard-text-clock",
           title: "履歴",
           to: `room/history/p`,

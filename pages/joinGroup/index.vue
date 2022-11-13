@@ -117,6 +117,7 @@ import {
 } from "~/plugins/firebase";
 import {authStateChanged} from '@/plugins/auth'
 
+
 export default {
   name: 'joinGroupPage',
   layout: "default",
@@ -177,7 +178,8 @@ export default {
           (snapshot) => {
             snapshot.docChanges().forEach((change)=>{
               let data = change.doc.data();
-              data.time = (data.time).toDate();
+              data.time = (data.time).toDate().toLocaleDateString();
+              
               if (change.type==="added") {
                 //同じアカウント名からの招待は最新のものを受け取る．
                 this.invitation.push(data);

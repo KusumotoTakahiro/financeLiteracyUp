@@ -36,3 +36,18 @@ export const isHalf = (text) => {
   }
   return false;
 };
+
+export const myPromiseAll = async (arr, anyfunc) => {
+  await Promise.all(arr.map(async arrItem => await anyfunc(arrItem)));
+  console.log('my PromiseAll done!!');
+}
+
+
+export const myPromise = (anyfunc, funcName) => {
+  return new Promise(resolve => {
+    setTimeout(()=> {
+      console.log(funcName); //確認のため
+      anyfunc();
+    }, 2000);
+  })
+}

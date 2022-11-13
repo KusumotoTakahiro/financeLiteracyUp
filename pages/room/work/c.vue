@@ -211,7 +211,7 @@ export default ({
 				}
 				try {
 					const hiscoll = collection(fireStore, "groups", this.roomPath, "history");
-					let d = `${this.user.uid}が${obj[key].content}を達成したと報告しました`
+					let d = `user: ${this.user.displayName}が${obj[key].content}を達成したと報告しました`
 					const history = await addDoc(hiscoll, {
 						rid: this.user.uid,
 						cid: null,

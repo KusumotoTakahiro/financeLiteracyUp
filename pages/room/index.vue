@@ -20,11 +20,11 @@
           <template v-for="item in parentItems">
           <v-hover 
             v-slot="{ hover }" 
-            :key="item"
+            :key="item.id"
             open-delay="50"
           >
             <v-card
-              :key="item"
+              :key="item.id"
               :to="item.to"
               color=""
               outlined
@@ -72,11 +72,11 @@
           <template v-for="item in childItems">
             <v-hover
               v-slot="{hover}"
-              :key="item"
+              :key="item.id"
               open-delay="50"
             >
               <v-card
-                :key="item"
+                :key="item.id"
                 :to="item.to"
                 outlined
                 :width="width"
@@ -135,54 +135,63 @@ export default {
           title: "お仕事追加",
           to: `room/work/p`,
           color: "light-blue lighten-1",
+          id: 1,
         },
         {
           icon: "mdi-basket",
           title: "ショップ追加",
           to: `room/shop/p`,
           color: "amber darken-1",
+          id: 2,
         },
         {
           icon: "mdi-emoticon-angry-outline",
           title: "罰金追加",
           to: `room/fine/p`,
           color: "red lighten-1",
+          id: 3,
         },
         {
           icon: "mdi-emoticon-outline",
           title: "ご褒美追加",
           to: `room/present/p`,
           color: "deep-orange lighten-3",
+          id: 4
         },
         {
           icon: "mdi-cash-100",
           title: "タックス追加",
           to: `room/tax/p`,
           color: "brown lighten-3",
+          id: 5
         },
         {
           icon: "mdi-alarm-note",
           title: "通知",
           to: `room/note`,
-          color: "pink lighten-1"
+          color: "pink lighten-1",
+          id: 6
         },
         {
           icon: "mdi-clipboard-text-clock",
           title: "履歴",
           to: `room/history/p`,
           color: "teal lighten-2",
+          id: 7
         },
         {
           icon: "mdi-account-multiple-plus",
           title: "ルーム招待",
           to: `room/invite`,
           color: "blue-grey darken-1",
+          id: 8
         },
         {
           icon: "mdi-cog-outline",
           title: "ルーム設定",
           to: `room/setting`,
           color: "blue-grey darken-1",
+          id: 9
         }
       ],
       childItems: [
@@ -191,36 +200,42 @@ export default {
           title: "お仕事",
           to: `/room/work/c` ,
           color: "light-blue lighten-1",
+          id: 1
         },
         {
           icon: "mdi-basket",
           title: "ショップ",
           to: `room/shop/c`,
           color: "amber darken-1",
+          id: 2
         },
         {
           icon: "mdi-emoticon-angry-outline",
           title: "罰金",
           to: `room/fine/c`,
           color: "red lighten-1",
+          id: 3
         },
         {
           icon: "mdi-emoticon-outline",
           title: "ご褒美",
           to: `room/present/c`,
           color: "deep-orange lighten-3",
+          id: 4
         },
         {
           icon: "mdi-cash-100",
           title: "タックス",
           to: `room/tax/c`,
           color: "brown lighten-3",
+          id: 5,
         },
         {
           icon: "mdi-clipboard-text-clock",
           title: "履歴",
           to: `/room/history/c`,
           color: "teal lighten-2",
+          id: 6,
         },
       ]
     }

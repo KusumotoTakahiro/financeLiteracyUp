@@ -230,15 +230,24 @@ export default ({
 		goToHome() {
 			this.$router.push('/room');
 		},
-		reportProgress() {
+		reportProgress() { //確認フォームの表示兼データ成型
+			console.log("report Progress")
+			if (this.notes.length===0) {
+				this.$store.commit("addMessage", {
+					text: "現在，通知は届いていません",
+					risk: 3, 
+				})
+				return;
+			}
 			this.cdialog1 = true;
 			let contents = [];
 			let member = [];
 			this.notes.forEach(note => {
 				if (note.approve==="disapprove") {
 					contents.push(note.data.content);
-					member.push(note.data.reporter);
 				}
+				console.log(note.data.reporter);
+				member.push(note.data.reporter); //報告者のUIDを識別子として保存
 			})
 			this.member = [...(new Set(member))]; //重複削除
 			if (contents.length > 0) {
@@ -253,16 +262,140 @@ export default ({
 				this.confirm_text = "全項目を承認して送ります。"
 			}
 		},
-		async sendProgress() {
-			//承認内容を送る(communicationを上書きする)
-			
-			
-
-			await fetch_data();
-			this.cdialog1 = false;
+		async caluculate_all() {
+			console.log('caluculate_all');
+			let obj = {}; //各メンバーの金額を扱うオブジェクト
+			this.member.forEach(one => {
+				obj[one] = 0; //各メンバーの金額を初期化
+			})
+			for (let i = 0; i < this.notes.length; i++) {
+				let note = this.notes[i];
+				let who = note.data.reporter;
+				await this.caluculate_price(note.approve, note.type, note.data.did)
+				.then((val) => {
+					obj[who] += Number(val);
+					console.log(obj[who]);
+				})
+			}
+			return obj;
 		},
-		async caluculate_child_balance(data) {
-
+		//各メンバーのpriceをそれぞれupdate ※forEachでは，awaitが使えないらしい
+		async update_member(obj) {
+			console.log('update_member');
+			console.log(obj);
+			for (let key in obj) {
+				if (obj.hasOwnProperty(key)) {
+					let price = obj[key];
+					console.log('price : ', price);
+					const ref = doc(fireStore, "users", key);
+					const querySnapshot = await getDoc(ref);
+					const balance = querySnapshot.data().balance;
+					await updateDoc(ref, {
+						balance: balance + price,
+					})
+				}
+				else {
+					console.log('update_member error');
+				}
+			}
+		},
+		async sendProgress() { //承認内容を送る(communicationを上書きする)
+			console.log('send Progress');
+			//各メンバーごとに金額を計算  
+			//thenで()=>{}（アロー関数）の形を取っていなかったからエラーになっていた?
+			await this.caluculate_all()
+			.then((obj) => this.update_member(obj))
+			.then(() => func.myPromiseAll(this.notes, this.updateNote))
+			.then(() => func.myPromiseAll(this.notes, this.historySave))
+			.then(() => this.fetch_data())
+			.then(()=> {
+				console.log('dialog false');
+				this.cdialog1 = false;
+				this.$store.commit("addMessage", {
+					text: "全項目に対して返信しました",
+					risk: 1, 
+				})
+			})
+		},
+		updateNote(note){
+			new Promise(resolve => {
+				console.log('updateNote');
+				const comref = doc(fireStore, "groups", this.roomPath, "communication", note.uid);
+				updateDoc(comref, {
+					confiremer: this.user.uid,
+					confiremerName: this.user.displayName,
+					confirmed: true, //確認済み
+					accept: note.approve==="approve" ? true : false,
+					cdate: serverTimestamp(),
+				})
+				resolve();
+			})
+		},
+		historySave(note) {
+			new Promise(resolve => {
+				console.log('historySave');
+				const hiscoll = collection(fireStore, "groups", this.roomPath, "history");
+				let d = "";
+				if (note.approve==="approve") {
+					d = `user: ${this.user.displayName}の判断により『${note.content}』が承認されました`;
+				}
+				else {
+					d = `user: ${this.user.displayName}の判断により『${note.content}』を承認されませんでした`;
+				}
+				addDoc(hiscoll, {
+					rid: this.user.uid,
+					cid: null,
+					date: serverTimestamp(),
+					data: d,
+				})
+				resolve();
+			})
+		},
+		async caluculate_price(approve, type, did) {
+			let ref = null; //db参照先
+			let data = null; //db内のdocument
+			let original_price = 0; //documentの中のprice
+			if (approve==="disapprove") return 0; //承認されていないので0で返却
+			switch (type) {
+				case "work":
+					ref = doc(fireStore, "groups", this.roomPath, "works", did);
+					break;
+				case "present":
+					ref = doc(fireStore, "groups", this.roomPath, "presents", did);
+					break;
+				case "shop":
+					ref = doc(fireStore, "groups", this.roomPath, "shops", did);
+					break;
+				case "fines":
+					ref = doc(fireStore, "groups", this.roomPath, "fines", did);
+					break;
+				case "apply": //子供からの参加申請もここで受け付ける．今は未実装.
+					break;
+				default:
+					console.log("something is wrong");
+					break;
+			}
+			data = await getDoc(ref);
+			original_price = data.data().price;
+			switch (type) { //ここで元の値段に税金がかかる．今は未実装.
+				case "work":
+					original_price = original_price;
+					break;
+				case "present":
+					original_price = original_price;
+					break;
+				case "shop":
+					original_price = - original_price;
+					break;
+				case "fines":
+					original_price = - original_price;
+					break;
+				default:
+					console.log("something is wrong");
+					original_price = 0;
+					break;
+			}
+			return original_price;
 		},
 		async fetch_data() {
 			//sendProgressの後に実行される
@@ -270,39 +403,45 @@ export default ({
 			通知が確認済みとなり，テーブルから消えたことを確認する．
 			同時に，新しい通知をDBからfetchする際に使うメソッド
 			*/
-			const com_all = await getDocs(this.comColRef);
+			console.log('fetch_data');
+			const com_all = await getDocs(this.comCollRef);
 			this.notes = [];
 			com_all.forEach(doc => {
-				if (doc.data().confirmed === false) { //未読の場合
-					let data = doc.data();
-					let pdata = {};
-					pdata.uid = doc.id;
-					switch (data.type) {
-						case 'work':
-							pdata.content = "『" + data.content + "』" + "を行いました";
-							break;
-						case 'present':
-							pdata.content = "『" + data.content + "』" + "を達成しました";
-							break;
-						case 'fine':
-							pdata.content = "『" + data.content + "』" + "を行いました";
-							break;
-						case 'shop':
-							pdata.content = "『" + data.content + "』" + "を購入しました";
-							break;
-						case 'apply':
-							pdata.content = "グループへの参加を申請します!"
-							break;
-						default:
-							pdata.content = "『" + data.content + "』" + "についての連絡です"
-							break;
+				try {
+					if (doc.data().confirmed === false) { //未読の場合
+						let data = doc.data();
+						let pdata = {};
+						pdata.uid = doc.id;
+						switch (data.type) {
+							case 'work':
+								pdata.content = "『" + data.content + "』" + "を行いました";
+								break;
+							case 'present':
+								pdata.content = "『" + data.content + "』" + "を達成しました";
+								break;
+							case 'fine':
+								pdata.content = "『" + data.content + "』" + "を行いました";
+								break;
+							case 'shop':
+								pdata.content = "『" + data.content + "』" + "を購入しました";
+								break;
+							case 'apply':
+								pdata.content = "グループへの参加を申請します!"
+								break;
+							default:
+								pdata.content = "『" + data.content + "』" + "についての連絡です"
+								break;
+						}
+						pdata.who = data.reporterName;
+						pdata.when = data.adate.toDate().toLocaleDateString();
+						pdata.type = data.type;
+						pdata.data = data;
+						pdata.approve = "approve";
+						this.notes.push(pdata);
 					}
-					pdata.who = data.reporterName;
-					pdata.when = data.adate.toDate().toLocaleDateString();
-					pdata.type = data.type;
-					pdata.data = data;
-					pdata.approve = "approve";
-					this.notes.push(pdata);
+				}
+				catch(error) {
+					console.log(error);
 				}
 			})
 		}

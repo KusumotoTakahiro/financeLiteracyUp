@@ -122,7 +122,7 @@
           show-select
           class="elevation-1"
           fixed-header
-          :height="$vuetify.breakpoint.height - 350"
+          :height="$vuetify.breakpoint.height"
         ></v-data-table>
         <v-row
           class="mt-3 mb-3 mx-auto"

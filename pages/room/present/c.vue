@@ -19,15 +19,26 @@
 						pb-0
 					"> 現在のご褒美一覧 </v-alert>
 				<v-data-table
-				v-model="selected"
+					v-model="selected"
 					:headers="headers"
-					:items="works"
+					:items="my_works"
 					:single-select="false"
 					item-key="id"
 					show-select
 					class="elevation-1"
 					fixed-header
-					:height="$vuetify.breakpoint.height/5*3"
+					hide-default-footer
+				></v-data-table>
+				<v-divider></v-divider>
+				<v-data-table
+					:headers="headers"
+					:items="others_works"
+					:single-select="false"
+					item-key="id"
+					class="elevation-1 blue-grey lighten-4 "
+					fixed-header
+					hide-default-header
+					hide-default-footer
 				></v-data-table>
 				<v-row 
 					class="mt-3 mb-3 mx-auto"
@@ -109,19 +120,25 @@ export default ({
 		return {
 			dialog1: true,
 			cdialog: false,
+			plane: false,
 			headers: [
 				{
-					text: '内容',
+					text: 'ご褒美',
 					align: 'start',
 					sortable: false,
 					value: 'content',
+				},
+				{
+					text: '対象者',
+					value: 'forWhom.name',
 				},
 				{
 					text: '報酬（パパ円）',
 					value: 'price'
 				}
 			],
-			works: [],
+			my_works: [],
+			others_works: [],
 			selected: [],
 			user: null,
 			roomPath: null,
@@ -147,7 +164,12 @@ export default ({
 				works_all.forEach(doc => {
 					let data = doc.data();
           data.id = doc.id;
-          this.works.push(data);
+					if (data.forWhom.uid === user.uid) {
+						this.my_works.push(data);
+					}
+					else {
+						this.others_works.push(data);
+					}
 				})
 			}
 			catch(error) {
@@ -241,7 +263,12 @@ export default ({
 				try {
 					let data = doc.data();
 					data.id = doc.id;
-					this.works.push(data);
+					if (data.forWhom.uid === this.user.uid) {
+						this.my_works.push(data);
+					}
+					else {
+						this.others_works.push(data);
+					}
 				}
 				catch(error) {
 					console.log(error);

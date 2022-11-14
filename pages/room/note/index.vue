@@ -24,7 +24,7 @@
 					item-key="uid"
 					class="elevation-1"
 					fixed-header
-					:height="$vuetify.breakpoint.height/5*3"
+					:height="$vuetify.breakpoint.height-350"
 				>
 				<template #[`item.approve`]="{ item }">
 					<v-radio-group

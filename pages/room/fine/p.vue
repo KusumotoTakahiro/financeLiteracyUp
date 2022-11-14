@@ -1,9 +1,9 @@
 <template>
-  <v-row>
+  <v-row align-content="center" justify="center">
     <v-col cols="12" sm="12" md="12" lg="12" xl="12">
       <v-dialog
         v-model="dialog"
-        :height="$vuetify.breakpoint.height - 100"
+        :height="$vuetify.breakpoint.height"
         max-width="600"
         hide-overlay
         outlined
@@ -73,36 +73,46 @@
           </v-card-actions>
         </v-card>
       </v-dialog>
-      <v-alert class="justify-center text-center text-h5"> 現在の罰金項目一覧 </v-alert>
-      <v-data-table
-        v-model="selected"
-        :headers="headers"
-        :items="fines"
-        :single-select="false"
-        item-key="content"
-        show-select
-        class="elevation-1"
-        fixed-header
-        :height="$vuetify.breakpoint.height - 250"
-      ></v-data-table>
-    </v-col>
-    <v-col cols="12" sm="12" md="12" lg="12" xl="12">
-      <v-row>
-        <v-btn class="mx-auto" width="10rem" @click="dialog=true">
-          追加
-        </v-btn>
-        <v-btn class="mx-auto" width="10rem" @click="delete_items()">
-          削除
-        </v-btn>
-      </v-row>
-      <v-row>
-        <v-btn
-          class="ml-auto"
-          height="40"
-          color=""
-          @click="goToHome()"
-        >Homeに戻る</v-btn>
-      </v-row>
+      <v-dialog
+        v-model="main_dialog"
+        outlined
+        hide-overlay 
+        
+        :max-width="width"
+        content-class="rounded-lg elevation-3"
+        transition="dialog-bottom-transition"
+        persistent
+      >
+        <v-alert class="justify-center text-center text-h5"> 罰則一覧 </v-alert>
+        <v-data-table
+          v-model="selected"
+          :headers="headers"
+          :items="fines"
+          :single-select="false"
+          item-key="content"
+          show-select
+          class="elevation-1"
+          fixed-header
+          :height="$vuetify.breakpoint.height - 350"
+        ></v-data-table>
+        <v-row
+          class="mt-3 mb-3 mx-auto"
+          align-content="center"
+          justify="space-around"
+        >
+          <v-btn class="mx-auto mb-1" width="7rem" @click="dialog=true">
+            追加
+          </v-btn>
+          <v-btn class="mx-auto mb-1" width="7rem" @click="delete_items()">
+            削除
+          </v-btn>
+          <v-btn
+            class="mx-auto mb-1"
+            width="7rem"
+            @click="goToHome()"
+          >Homeに戻る</v-btn>
+        </v-row>
+      </v-dialog>
     </v-col>
   </v-row>
 </template>
@@ -131,6 +141,7 @@ export default ({
   data() {
     return {
       dialog: false,
+      main_dialog: true,
       content: "",
       price: null,
       isLogin: false,
@@ -184,6 +195,11 @@ export default ({
         risk: 3, 
       })
       this.$router.push('/');
+    }
+  },
+  computed: {
+    width: function() {
+      return this.$vuetify.breakpoint.width/5*4;
     }
   },
   methods: {

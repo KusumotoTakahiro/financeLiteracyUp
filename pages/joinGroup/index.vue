@@ -71,29 +71,69 @@
           content-class="rounded-lg elevation-2"
           transition="dialog-bottom-transition"
         >
-          <v-card
-            :height="$vuetify.breakpoint.height/3*2"
-          >
-            <v-data-table
-              v-model="selected"
-              :headers="headers"
-              :items="invitation"
-              :single-select="true"
-              item-key="fromWhom"
-              show-select
-              class="elevation-1"
-              fixed-header
-            ></v-data-table>
-            <v-card-actions>
-              <v-btn
-                color="green darken-1"
-                text
-                @click="joinGroup()"
-              >参加する</v-btn>
-            </v-card-actions>
-          </v-card>
+        <v-alert 
+          class="
+            justify-center 
+            text-center 
+            text-h6
+            pb-0
+          "> 招待されているルーム </v-alert>
+          <v-data-table
+            v-model="selected"
+            :headers="headers"
+            :items="invitation"
+            :single-select="true"
+            item-key="fromWhomUid"
+            show-select
+            class="elevation-1"
+            :height="$vuetify.breakpoint.height/5*2"
+            fixed-header
+          ></v-data-table>
+          <v-row 
+            class="mt-3 mb-3 mx-auto"
+            align-content="center"
+            justify="space-around">
+            <v-btn
+              color=""
+              @click="confirm_dialog()"
+            >参加する</v-btn>
+          </v-row>
         </v-dialog>
-    </div>
+        <v-dialog
+          v-model="cdialog"
+          outlined
+          hide-overlay
+          :max-width="width/5*3"
+          content-class="rounded-lg elevation-3"
+          transition="dialog-bottom-transition"
+          persistent
+        >
+        <div style="background-color: white;">
+          <v-alert
+            class="justify-center text-center text-body-2"
+          >
+            {{selected_room.roomName}}に参加します
+            <br/>よろしいですか？
+          </v-alert>
+          <v-row 
+            class="mt-3 mb-0 mx-auto pb-5"
+            align-content="center" 
+            justify="space-around" 
+            style="height:40px">
+            <v-btn
+              class="black--text"
+              height="40"
+              @click="joinGroup()"
+            >はい</v-btn>
+            <v-btn
+              class="black--text px-2"
+              height="40"
+              @click="cdialog=false"
+            >いいえ</v-btn>
+          </v-row>
+        </div>
+        </v-dialog>
+      </div>
     </v-col>
   </v-row>
 </template>
@@ -125,6 +165,7 @@ export default {
     return {
       dialog1: false,
       dialog2: false,
+      cdialog: false,
       headers: [
         {
           text: 'ユーザ名',
@@ -143,9 +184,12 @@ export default {
       ],
       invitation: [],
       selected: [],
+      selected_room: "",
       comColl: null,
       unsubscribe: null,
       uid: null,
+      attribute: null,
+      name: null,
     }
   },
   async mounted() {
@@ -154,9 +198,11 @@ export default {
     if (user.uid) {
       try {
         this.uid = user.uid;
+        this.name = user.displayName;
         const docRef = doc(fireStore, "users", user.uid);
         const querySnapshot = await getDoc(docRef);
         const attribute = querySnapshot.data().attribute;
+        this.attribute = attribute;
         if (attribute!=="child") {
           this.$store.commit("addMessage", {
             text: "不正アクセスです．ユーザ種別が違います.",
@@ -207,7 +253,21 @@ export default {
       this.$router.push('/');
     }
   },
+  computed: {
+		width: function() {
+			return this.$vuetify.breakpoint.width/5*4;
+		}
+	},
   methods: {
+    confirm_dialog() {
+      let obj = this.selected;
+      for (let key in obj) {
+        if (obj.hasOwnProperty(key)) {
+          this.selected_room = obj[key];
+        }
+      }
+      this.cdialog=true;
+    },
     async joinGroup() {
       let obj = this.selected;
       for (let key in obj) {
@@ -219,6 +279,14 @@ export default {
             await updateDoc(docRef, {
               group: obj[key].roomPath,
             })
+            //次に，グループのメンバーとして自分を登録する
+            const memberColl = collection(fireStore, "groups", obj[key].roomPath, "member");
+            await setDoc(doc(memberColl), {
+              name: this.name,
+              uid: this.uid,
+              attribute: this.attribute,
+            })
+            //最後に通知は消しておく．（実際は消して消さなくてもいいかも）
             const inviteRef = doc(fireStore, "users", this.uid, "comminicate", this.uid);
             await deleteDoc(inviteRef);
             this.$router.push('/room');
@@ -231,6 +299,8 @@ export default {
     }
   },
   beforeDestroy() {
+    console.log('beforeDestroy');
+    console.log('unsubscribe: end realtime listen')
     this.unsubscribe();
   }
 }

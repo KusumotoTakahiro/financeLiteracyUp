@@ -30,8 +30,38 @@
                   outlined
                   type="text"
                   hide-details=""
-                  class="input_case"
+                  class="input_case mb-2"
                 ></v-text-field>
+              </div>
+              <div>
+                <div class="form-header mb-2">対象者</div>
+                <v-select
+                  v-model="forWhom"
+                  :items="children"
+                  item-text="data.name"
+                  item-value="uid"
+                  return-object
+                  multiple
+                  class="mt-0 pt-0"  
+                >
+                  <template v-slot:selection="{item}">
+                  <v-chip
+                    class="ma-2"
+                    color="primary"
+                    outlined
+                    pill
+                    close
+                    large
+                    @click:close="chip_delete(item.uid)"
+                  >
+                    {{item.data.name}}
+                    <v-icon right>
+                      mdi-account-outline
+                    </v-icon>
+                  </v-chip>
+                  </template>
+                  
+                </v-select>
               </div>
               <div>
                 <div class="form-header">報酬</div>
@@ -88,7 +118,7 @@
           :headers="headers"
           :items="presents"
           :single-select="false"
-          item-key="content"
+          item-key="id"
           show-select
           class="elevation-1"
           fixed-header
@@ -130,6 +160,7 @@ import {
   fireStore,
 } from "~/plugins/firebase";
 import {authStateChanged} from '@/plugins/auth'
+import { fromStringWithSourceMap } from "source-list-map";
 
 export default ({
   name: 'presentParentPage',
@@ -140,10 +171,13 @@ export default ({
       dialog: false,
       main_dialog: true,
       content: "",
+      forWhom: [],
       price: null,
       isLogin: false,
       roomPath: null,
       presentCollRef: null,
+      memberCollRef: null,
+      children: [],
       selected: [],
       headers: [
         {
@@ -151,6 +185,10 @@ export default ({
           align: 'start',
           sortable: false,
           value: 'content',
+        },
+        {
+          text: '対象者',
+          value: 'forWhom.name',
         },
         {
           text: '報酬（パパ円）',
@@ -179,12 +217,49 @@ export default ({
         console.log(presents_all)
         presents_all.forEach(doc => {
           //ここでpresentsを更新する =>データがテーブルに反映されるはず
-          this.presents.push(doc.data())
+          let data = doc.data();
+          data.id = doc.id;
+          this.presents.push(data);
         })
+
+        //自分のグループに参加しているchildユーザを全取得
+        try {
+          const memberCollRef = collection(fireStore, "groups", roomPath, "member");
+          this.memberCollRef = memberCollRef;
+          const member = await getDocs(memberCollRef);
+          console.log(member);
+          const children = []
+          member.forEach(doc => {
+            if (doc.data().attribute==="child") {
+              children.push(doc.data());
+              console.log(doc.data())
+            }
+          })
+          try {
+            for (let i = 0; i < children.length; i++) {
+              const childRef = doc(fireStore, "users", children[i].uid);
+              const childData = await getDoc(childRef);
+              let child = {}
+              child.data = childData.data();
+              child.uid = children[i].uid;
+              this.children.push(child);
+            }
+          }
+          catch (error) {
+            console.log('分割してみた')
+            console.log(error);
+          }
+        }
+        catch (error) {
+          console.log('memberが取得できなかったエラー');
+          console.log(error);
+        }
       }
       catch(error) {
+        console.log('presentsが取得できなかったエラー');
         console.log(error);
       }
+      
     }
     else {
       this.$store.commit("addMessage", {
@@ -203,9 +278,14 @@ export default ({
     goToHome() {
       this.$router.push('/room')
     },
+    chip_delete(uid) {
+      console.log('chip_delete');
+      let newary = this.forWhom.filter(one => one.uid !== uid)
+      this.forWhom = newary;
+    },
     async create_item() { //tableに登録するアイテムの作成
       let flag = true;
-      if (!this.is_written(this.content, this.price)) {
+      if (!this.is_written(this.content, this.price, this.forWhom)) {
         flag = false;
         this.$store.commit("addMessage", {
           text: `記入漏れがあります`,
@@ -221,10 +301,19 @@ export default ({
       }
       if (flag) {
         try {
-          const presentRef = await addDoc(this.presentCollRef, {
-            content: this.content,
-            price: this.price,        
-          })
+          for (let i = 0; i < this.forWhom.length; i++) {
+            let forWhom = this.forWhom[i];
+            const presentRef = await addDoc(this.presentCollRef, {
+              content: this.content,
+              price: this.price,  
+              forWhom: { 
+                name: forWhom.data.name,
+                uid: forWhom.uid,
+                attribute: forWhom.data.attribute //属性は確認用,
+              }      
+            })
+          }
+          
         }
         catch(error) {
           console.log('create_item error');
@@ -240,11 +329,14 @@ export default ({
       let obj = this.selected;
       for(let key in obj ) {
         if( obj.hasOwnProperty(key) ) {
+          console.log(obj[key])
+          console.log(obj)
           try {
             await deleteDoc(doc(fireStore, "groups", this.roomPath, "presents", obj[key].id));
           }
           catch(error) {
             console.log(error)
+            
           }
         }
       }
@@ -268,12 +360,15 @@ export default ({
         
       })
     },
-    is_written(content, price) {
+    is_written(content, price, forWhom) {
       let ok = true;
       if (!content) {
         ok = false;
       }
       if (!price) {
+        ok = false;
+      }
+      if (forWhom.length === 0) {
         ok = false;
       }
       return ok;

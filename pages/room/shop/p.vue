@@ -89,7 +89,7 @@
           :headers="headers"
           :items="shops"
           :single-select="false"
-          item-key="content"
+          item-key="id"
           show-select
           class="elevation-1"
           fixed-header
@@ -180,7 +180,9 @@ export default ({
         console.log(shops_all)
         shops_all.forEach(doc => {
           //ここでshopsを更新する =>データがテーブルに反映されるはず
-          this.shops.push(doc.data())
+          let data = doc.data();
+          data.id = doc.id;
+          this.shops.push(data);
         })
       }
       catch(error) {

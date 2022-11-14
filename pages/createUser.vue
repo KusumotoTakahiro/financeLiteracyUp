@@ -39,6 +39,7 @@
               type="text"
               hide-details=""
               prepend-inner-icon="mdi-account"
+              class="input_case"
             ></v-text-field>
             <div 
             class="form-header"
@@ -53,6 +54,7 @@
               type="email"
               hide-details=""
               prepend-inner-icon="mdi-email"
+              class="input_case"
               v-if="attribute=='parent'"
             ></v-text-field>
             <div 
@@ -68,11 +70,13 @@
               type="text"
               hide-details=""
               prepend-inner-icon="mdi-account-key"
+              class="input_case"
               v-if="attribute=='child'"
             ></v-text-field>
             <div class="form-header">パスワード</div>
             <v-text-field
               v-model="password"
+              class="input_case"
               clearable
               dense
               color=""
@@ -296,5 +300,9 @@ export default {
 }
 .original-font-size {
   font-size: 0.6rem;
+}
+.input_case {
+  font-family: serif;
+  font-size: 0.7rem;
 }
 </style>

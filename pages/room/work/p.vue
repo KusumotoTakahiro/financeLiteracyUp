@@ -88,7 +88,7 @@
           :headers="headers"
           :items="works"
           :single-select="false"
-          item-key="content"
+          item-key="id"
           show-select
           class="elevation-1"
           fixed-header
@@ -242,6 +242,7 @@ export default ({
       let obj = this.selected;
       for(let key in obj ) {
         if( obj.hasOwnProperty(key) ) {
+          console.log(obj[key])
           try {
             await deleteDoc(doc(fireStore, "groups", this.roomPath, "works", obj[key].id));
           }

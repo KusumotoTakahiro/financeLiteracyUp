@@ -31,7 +31,7 @@
               v-model="password"
               clearable
               dense
-              color=""
+              class="input_case"
               :append-icon="showPass ? 'mdi-eye' : 'mdi-eye-off'"
               :type="showPass ? 'text' : 'password'"
               prepend-inner-icon="mdi-key"
@@ -187,3 +187,9 @@ export default {
   }
 }
 </script>
+<style>
+.input_case {
+  font-family: serif;
+  font-size: 0.7rem;
+}
+</style>

@@ -89,7 +89,7 @@
           :headers="headers"
           :items="fines"
           :single-select="false"
-          item-key="content"
+          item-key="id"
           show-select
           class="elevation-1"
           fixed-header
@@ -182,7 +182,9 @@ export default ({
         console.log(fines_all)
         fines_all.forEach(doc => {
           //ここでfinesを更新する =>データがテーブルに反映されるはず
-          this.fines.push(doc.data())
+          let data = doc.data();
+          data.id = doc.id;
+          this.fines.push(data);
         })
       }
       catch(error) {

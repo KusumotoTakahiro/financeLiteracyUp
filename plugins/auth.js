@@ -1,4 +1,6 @@
 import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth'
+import { addDoc, serverTimestamp, collection } from 'firebase/firestore';
+import { fireStore } from './firebase';
 
 const auth = getAuth();
 
@@ -31,5 +33,29 @@ export const userLogout = () => {
     .catch( (error) => {
       console.log(`ログアウト時にエラーが発生しました(${error})`);
     })
+  })
+}
+
+
+export const saveHistory = (roomPath, userUid, stringData) => {
+  return new Promise((resolve, reject) => {
+    console.log('saveHistory() in auth.js');
+    if (!roomPath) {
+      console.log('roomPathがみつかりません');
+    }
+    try {
+      const hiscoll = collection(fireStore, "groups", roomPath, "history");
+      addDoc(hiscoll, {
+        rid: userUid,
+        cid: null,
+        date: serverTimestamp(),
+        data: stringData,
+      })
+      console.log('save history')
+      resolve();
+    }
+    catch (error) {
+      console.log(error);
+    }
   })
 }

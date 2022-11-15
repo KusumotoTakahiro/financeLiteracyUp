@@ -1,6 +1,60 @@
 <template>
-  <v-row align-content="center" justify="center">
+  <v-row align-content="center" justify="center" class="bg-yellow">
     <v-col cols="12" sm="12" md="12" lg="12" xl="12">
+      <v-card
+        class="
+					d-flex
+          justify-center
+					mx-auto
+        "
+        elevation="10"
+        :width="$vuetify.breakpoint.width-50"
+      >
+        <div class="header">
+          <v-alert 
+            class="
+              text-center 
+              text-h6
+              my-0
+              bg-grad
+              lime--text
+              text-ligten-3
+              "
+            border="bottom"
+						colored-border
+						color="blue accent-5"
+						elevation="2"> 現在のお手伝い一覧 
+          </v-alert>
+        </div>
+        <div class="main mb-10 mt-10">
+          <v-data-table
+            v-model="selected"
+            :headers="headers"
+            :items="works"
+            :single-select="false"
+            item-key="id"
+            show-select
+            class="elevation-0"
+            fixed-header
+            :height="$vuetify.breakpoint.height-210"
+          ></v-data-table>
+          <v-row
+            class="mt-3 mb-3 mx-auto"
+            align-content="center"
+            justify="space-around"
+          >
+            <v-btn class="mx-auto mb-1" width="7rem" @click="dialog=true">
+              追加
+            </v-btn>
+            <v-btn class="mx-auto mb-1" width="7rem" @click="delete_items()">
+              削除
+            </v-btn>
+            <v-btn class="mx-auto mb-1" width="7rem" @click="goToHome()">
+              Homeに戻る
+            </v-btn>
+          </v-row>
+        </div>
+      </v-card>
       <v-dialog
         v-model="dialog"
         outlined
@@ -73,43 +127,6 @@
           </v-card-actions>
         </v-card>
       </v-dialog>
-      <v-dialog
-        v-model="main_dialog"
-        outlined
-        hide-overlay 
-        :max-width="width"
-        content-class="rounded-lg elevation-3"
-        transition="dialog-bottom-transition"
-        persistent
-      >
-        <v-alert class="justify-center text-center text-h5"> 現在のお手伝い一覧 </v-alert>
-        <v-data-table
-          v-model="selected"
-          :headers="headers"
-          :items="works"
-          :single-select="false"
-          item-key="id"
-          show-select
-          class="elevation-1"
-          fixed-header
-          :height="$vuetify.breakpoint.height - 350"
-        ></v-data-table>
-        <v-row
-          class="mt-3 mb-3 mx-auto"
-          align-content="center"
-          justify="space-around"
-        >
-          <v-btn class="mx-auto mb-1" width="7rem" @click="dialog=true">
-            追加
-          </v-btn>
-          <v-btn class="mx-auto mb-1" width="7rem" @click="delete_items()">
-            削除
-          </v-btn>
-          <v-btn class="mx-auto mb-1" width="7rem" @click="goToHome()">
-            Homeに戻る
-          </v-btn>
-        </v-row>
-      </v-dialog>
     </v-col>
   </v-row>
 </template>
@@ -129,7 +146,10 @@ import {
 import {
   fireStore,
 } from "~/plugins/firebase";
-import {authStateChanged} from '@/plugins/auth'
+import {
+  authStateChanged,
+  saveHistory,
+} from '@/plugins/auth'
 
 export default ({
   name: 'workParentPage',
@@ -144,6 +164,7 @@ export default ({
       isLogin: false,
       roomPath: null,
       workCollRef: null,
+      user: null,
       selected: [],
       headers: [
         {
@@ -165,6 +186,7 @@ export default ({
     console.log(user);
     if (user.uid) {
       this.isLogin=true;
+      this.user = user;
       try {
         //ログインユーザの情報から所属するグループのworksの参照を取得
         const docRef = doc(fireStore, "users", user.uid);
@@ -205,7 +227,7 @@ export default ({
     goToHome() {
       this.$router.push('/room')
     },
-    async create_item() { //tableに登録するアイテムの作成
+    async create_item() { //tableに登録するアイテムの作成 作成は一つずつ
       let flag = true;
       if (!this.is_written(this.content, this.price)) {
         flag = false;
@@ -223,10 +245,13 @@ export default ({
       }
       if (flag) {
         try {
-          const workRef = await addDoc(this.workCollRef, {
+          await addDoc(this.workCollRef, {
             content: this.content,
             price: this.price,        
           })
+          await saveHistory(this.roomPath, this.user.uid, 
+            `${this.user.displayName}が${this.content}を『お手伝い』に追加しました`
+          )
         }
         catch(error) {
           console.log('create_item error');
@@ -245,6 +270,9 @@ export default ({
           console.log(obj[key])
           try {
             await deleteDoc(doc(fireStore, "groups", this.roomPath, "works", obj[key].id));
+            await saveHistory(this.roomPath, this.user.uid, 
+              `${this.user.displayName}が${obj[key].content}を『お手伝い』から削除しました`
+            )
           }
           catch(error) {
             console.log(error)
@@ -289,8 +317,40 @@ export default ({
   }
 })
 </script>
-<style scoped>
+<style scss>
 .input_case {
   font-family: 'serif'
 }
+
+.header {
+	z-index: 5;
+	width: 100%;
+	height: 50px;
+	position: fixed;
+	vertical-align: top;
+}
+
+.main {
+	position: relative;
+	top: 50px;
+}
+
+.bg-grad {
+	background: linear-gradient(-45deg,  #9cecfb, #65c7f7, #0052d4, #290BA1);
+}
+
+.bg-yellow {
+	background-color: #FCFCD7;
+}
+
+/* これよくわからんけど，背景色変えれるみたい．どんな理屈で動いてるんや？ */
+.theme--light.v-data-table
+> .v-data-table__wrapper
+> table
+> tbody
+> tr:hover:not(.v-data-table__expanded__content):not(.v-data-table__empty-wrapper)
+{
+	color: red;
+}
+
 </style>

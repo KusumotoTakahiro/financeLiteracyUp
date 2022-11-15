@@ -1,40 +1,46 @@
 <template>
-  <v-row align-content="center" justify="center">
+  <v-row align-content="center" justify="center" class="bg-yellow">
     <v-col cols="12" sm="12" md="12" lg="12" xl="12">
-      <v-card>
-        <div class="header">
-          <v-alert 
-            class="
-              justify-center 
-              text-center 
-              text-h6
-              "
-        > 履歴 </v-alert>
-        </div>
-        
-      </v-card>
       <v-card
         class="
-          d-flex
-          algin-content-space-around
-          flex-wrap
+					d-flex
           justify-center
-          mt-1
+					mx-auto
         "
-        elevation="5"
-        :width="$vuetify.breakpoint.width"
+        elevation="10"
+        :width="$vuetify.breakpoint.width-50"
       >
+				<div class="header">
+					<v-alert 
+						class="
+							text-center
+							text-h6
+							my-0
+							bg-grad
+							lime--text
+							text--lighten-3
+							"
+						border="bottom"
+						colored-border
+						color="blue accent-5"
+						elevation="2"
+					> 履歴 
+					</v-alert>
+				</div>
+				<div class="main mb-10">
         <v-data-table
           :headers="headers"
           :items="history"
-          :single-select="false"
           item-key="id"
-          class="elevation-0"
+					:sort-by.sync="sortBy"
+					:sort-desc.sync="sortDesc"
+          class="
+						elevation-0
+					"
           fixed-header
           :height="$vuetify.breakpoint.height"
         ></v-data-table>
-      </v-card>
-      <v-row
+				<v-row
           class="mt-3 mb-3 mx-auto"
           align-content="center"
           justify="space-around"
@@ -43,6 +49,9 @@
             Homeに戻る
           </v-btn>
         </v-row>
+				</div>
+      </v-card>
+      
     </v-col>
   </v-row>
 </template>
@@ -68,14 +77,17 @@ import { fromStringWithSourceMap } from "source-list-map";
 export default {
   data: () => ({
     selected: [],
+		sortBy: "processed_date",
+		sortDesc: true,
     headers: [
       {
         align: 'start',
-        sortable: false,
         value: 'processed_date',
+				sortable: false,
       },
       {
         value: 'data',
+				sortable: false,
       },
     ],
     history: [],
@@ -116,6 +128,35 @@ export default {
   }
 }
 </script>
-<style scoped>
+<style scss>
+.header {
+	z-index: 5;
+	width: 100%;
+	height: 50px;
+	position: fixed;
+	vertical-align: top;
+}
 
+.main {
+	position: relative;
+	top: 50px;
+}
+
+.bg-grad {
+	background: linear-gradient(-45deg,  #9cecfb, #65c7f7, #0052d4, #290BA1);
+}
+
+.bg-yellow {
+	background-color: #FCFCD7;
+}
+
+/* これよくわからんけど，背景色変えれるみたい．どんな理屈で動いてるんや？ */
+.theme--light.v-data-table
+> .v-data-table__wrapper
+> table
+> tbody
+> tr:hover:not(.v-data-table__expanded__content):not(.v-data-table__empty-wrapper)
+{
+	color: red;
+}
 </style>

@@ -1,13 +1,67 @@
 <template>
-  <v-row>
+  <v-row align-content="center" justify="center" class="bg-yellow">
     <v-col cols="12" sm="12" md="12" lg="12" xl="12">
+      <v-card
+        class="
+					d-flex
+          justify-center
+					mx-auto
+        "
+        elevation="10"
+        :width="$vuetify.breakpoint.width-50"
+      >
+        <div class="header">
+          <v-alert 
+            class="
+              text-center 
+              text-h6
+              my-0
+              bg-grad
+              lime--text
+              text-ligten-3
+              "
+            border="bottom"
+            colored-border
+            color="blue accent-5"
+            elevation="2"> 現在の税金一覧
+          </v-alert>
+        </div>
+        <div class="main mb-10 mt-10">
+          <v-data-table
+            v-model="selected"
+            :headers="headers"
+            :items="taxs"
+            :single-select="false"
+            item-key="id"
+            show-select
+            class="elevation-0"
+            fixed-header
+            :height="$vuetify.breakpoint.height-210"
+          ></v-data-table>
+          <v-row
+            class="mt-3 mb-3 mx-auto"
+            align-content="center"
+            justify="space-around"
+          >
+            <v-btn class="mx-auto mb-1" width="7rem" @click="dialog=true">
+              追加
+            </v-btn>
+            <v-btn class="mx-auto mb-1" width="7rem" @click="delete_items()">
+              削除
+            </v-btn>
+            <v-btn class="mx-auto mb-1" width="7rem" @click="goToHome()">
+              Homeに戻る
+            </v-btn>
+          </v-row>
+        </div>
+      </v-card>
       <v-dialog
         v-model="dialog"
         :height="$vuetify.breakpoint.height - 100"
         max-width="600"
         hide-overlay
         outlined
-        content-class="rounded-lg elevation-0"
+        content-class="rounded-lg elevation-2"
         transition="dialog-bottom-transition"
       >
         <v-card 
@@ -16,11 +70,11 @@
           outlined
           shaped
         >
-          <v-card-title class="justify-center">税金項目追加</v-card-title>
+          <v-card-title class="justify-center py-0">税金項目追加</v-card-title>
           <v-card-text>
             <template>
               <div>
-                <div class="form-header">内容</div>
+                <div class="form-header">税金</div>
                 <v-text-field
                   v-model="content"
                   clearable
@@ -32,6 +86,36 @@
                   hide-details=""
                   class="input_case"
                 ></v-text-field>
+              </div>
+              <div>
+                <div class="form-header">課税対象</div>
+                <v-select
+                  v-model="targets"
+                  :items="items"
+                  item-text="name"
+                  item-value="uid"
+                  multiple
+                  return-object
+                  class="my-0 py-0"
+                  placeholder="課税対象を選択"
+                >
+                  <template v-slot:selection="{item}">
+                    <v-chip
+                      class="ma-2"
+                      color="primary"
+                      outlined
+                      pill
+                      close
+                      large
+                      @click:close="chip_delete(item.id)"
+                    >
+                      <v-icon left>
+                        mdi-bullseye-arrow
+                      </v-icon>
+                      {{item.name}}
+                    </v-chip>
+                  </template>
+                </v-select>
               </div>
               <div>
                 <div class="form-header">税率</div>
@@ -71,36 +155,6 @@
           </v-card-actions>
         </v-card>
       </v-dialog>
-      <v-alert class="justify-center text-center text-h5"> 現在の税金項目一覧 </v-alert>
-      <v-data-table
-        v-model="selected"
-        :headers="headers"
-        :items="taxs"
-        :single-select="false"
-        item-key="content"
-        show-select
-        class="elevation-1"
-        fixed-header
-        :height="$vuetify.breakpoint.height - 250"
-      ></v-data-table>
-    </v-col>
-    <v-col cols="12" sm="12" md="12" lg="12" xl="12">
-      <v-row>
-        <v-btn class="mx-auto" width="10rem" @click="dialog=true">
-          追加
-        </v-btn>
-        <v-btn class="mx-auto" width="10rem" @click="delete_items()">
-          削除
-        </v-btn>
-      </v-row>
-      <v-row>
-        <v-btn
-          class="ml-auto"
-          height="40"
-          color=""
-          @click="goToHome()"
-        >Homeに戻る</v-btn>
-      </v-row>
     </v-col>
   </v-row>
 </template>
@@ -120,7 +174,10 @@ import {
 import {
   fireStore,
 } from "~/plugins/firebase";
-import {authStateChanged} from '@/plugins/auth'
+import {
+  authStateChanged,
+  saveHistory,
+} from '@/plugins/auth'
 
 export default ({
   name: 'taxParentPage',
@@ -134,6 +191,7 @@ export default ({
       isLogin: false,
       roomPath: null,
       taxCollRef: null,
+      user: null,
       selected: [],
       headers: [
         {
@@ -143,11 +201,38 @@ export default ({
           value: 'content',
         },
         {
+          text: '課税対象',
+          value: 'target'
+        },
+        {
           text: '税率（％）',
           value: 'price'
         }
       ],
-      taxs: []
+      taxs: [],
+      items: [
+        {
+          name: 'お手伝い',
+          id: 1,
+        },
+        {
+          name: '商品',
+          id: 2,
+        },
+        {
+          name: 'ご褒美',
+          id: 3,
+        },
+        {
+          name: '罰則',
+          id: 4,
+        },
+        {
+          name: 'その他(カスタム)',
+          id: 5,
+        }
+      ],
+      targets: [],
     }
   },
   async mounted() {
@@ -155,6 +240,7 @@ export default ({
     console.log(user);
     if (user.uid) {
       this.isLogin=true;
+      this.user = user;
       try {
         //ログインユーザの情報から所属するグループのtaxsの参照を取得
         const docRef = doc(fireStore, "users", user.uid);
@@ -169,7 +255,9 @@ export default ({
         console.log(taxs_all)
         taxs_all.forEach(doc => {
           //ここでtaxsを更新する =>データがテーブルに反映されるはず
-          this.taxs.push(doc.data())
+          let data = doc.data();
+          data.id = doc.id;
+          this.taxs.push(data);
         })
       }
       catch(error) {
@@ -188,9 +276,14 @@ export default ({
     goToHome() {
       this.$router.push('/room')
     },
+    chip_delete(id) {
+      console.log('chip_delete');
+      let newary = this.targets.filter(one => one.id !== id)
+      this.targets = newary;
+    },
     async create_item() { //tableに登録するアイテムの作成
       let flag = true;
-      if (!this.is_written(this.content, this.price)) {
+      if (!this.is_written(this.content, this.price, this.targets)) {
         flag = false;
         this.$store.commit("addMessage", {
           text: `記入漏れがあります`,
@@ -206,10 +299,18 @@ export default ({
       }
       if (flag) {
         try {
-          const taxRef = await addDoc(this.taxCollRef, {
-            content: this.content,
-            price: this.price,        
-          })
+          for (let i = 0; i < this.targets.length; i++) {
+            let target = this.targets[i];
+            const taxRef = await addDoc(this.taxCollRef, {
+              content: this.content,
+              price: this.price,  
+              target: target.name,      
+            })
+            await saveHistory(this.roomPath, this.user.uid, 
+              `${this.user.displayName}が${target.name}を課税対象に追加しました.`
+            )
+          }
+          
         }
         catch(error) {
           console.log('create_item error');
@@ -227,6 +328,9 @@ export default ({
         if( obj.hasOwnProperty(key) ) {
           try {
             await deleteDoc(doc(fireStore, "groups", this.roomPath, "taxs", obj[key].id));
+            await saveHistory(this.roomPath, this.user.uid,
+              `${this.user.displayName}が${target.name}を課税対象から削除しました.`
+            )
           }
           catch(error) {
             console.log(error)
@@ -253,12 +357,15 @@ export default ({
         
       })
     },
-    is_written(content, price) {
+    is_written(content, price, target) {
       let ok = true;
       if (!content) {
         ok = false;
       }
       if (!price) {
+        ok = false;
+      }
+      if (target.length===0) {
         ok = false;
       }
       return ok;

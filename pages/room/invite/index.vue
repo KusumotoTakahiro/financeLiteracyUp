@@ -1,72 +1,109 @@
 <template>
-	<v-row>
+	<v-row align-content="center" justify="center" class="bg-yellow">
 		<v-col cols="12" sm="12" md="12" lg="12" xl="12">
-			<v-alert class="justify-center text-center text-h5"> グループに招待 </v-alert>
+			<v-card
+        class="
+					d-flex
+          justify-center
+					mx-auto
+        "
+        elevation="10"
+        :width="$vuetify.breakpoint.width-50"
+				:height="$vuetify.breakpoint.height"
+      >
+				<div class="header">
+					<v-alert 
+						class="
+							text-center 
+							text-h6
+							my-0
+							bg-grad
+							lime--text
+							text-ligten-3
+							"
+						border="bottom"
+						colored-border
+						color="blue accent-5"
+						elevation="2"> グループに招待
+					</v-alert>
+				</div>
 				<v-card 
-					class="py-5 mx-auto"
+					class="mb-0 mt-15 mx-1"
+					height="200px"
+					style="position: fixed; top:70px"
 					elevation="0"
-					width="450"
 				>
 					<v-text-field
 						label="検索"
 						placeholder="ユーザ名を入力"
 						v-model="forWhom"
+						class="mt-7 mb-0"
 						outlined
 						:height="height/15"
-						width="600"
+						width="600px"
 						@keyup.enter="search_user"
 						append-icon="mdi-magnify"
 						@click:append="search_user"
 					></v-text-field>
-					<v-row>
+					<v-row
+						class="mt-0 mb-3 mx-auto"
+						align-content="center"
+						justify="space-around"
+					>
 						<v-btn
-							class="mx-auto mt-15"
-							height="40"
-							width="150"
-							color=""
+							class="mx-auto"
 							@click="search_user()"
-						>検索</v-btn>
+						>　検 索　</v-btn>
 						<v-btn
-							class="mx-auto mt-15"
-							height="40"
-							width="150"
-							color=""
+							class="mx-auto"
 							@click="goToHome()"
 						>Homeに戻る</v-btn>
 					</v-row>
-					<v-dialog
-						v-model="dialog"
-						:height="$vuetify.breakpoint.height/2"
-						max-width="600"
-						hide-overlay
-						content-class="rounded-lg elevation-0"
-						transition="dialog-bottom-transition"
+				</v-card>
+				<v-dialog
+					v-model="dialog"
+					:height="$vuetify.breakpoint.height/2"
+					max-width="600"
+					hide-overlay
+					content-class="rounded-lg elevation-2"
+					transition="dialog-bottom-transition"
+				>
+					<v-data-table
+						v-model="selected"
+						:headers="headers"
+						:items="users"
+						:single-select="false"
+						item-key="uid"
+						show-select
+						class="elevation-0"
+						fixed-header
+						scrollable="false"
+						hide-default-footer
+						:height="$vuetify.breakpoint.height/3"
+					></v-data-table>
+					<v-divider></v-divider>
+					<v-row 
+						class="mt-3 mb-3 mx-auto"
+            align-content="center"
+            justify="space-around"
 					>
-						<v-divider></v-divider>
-						<v-data-table
-							v-model="selected"
-							:headers="headers"
-							:items="users"
-							:single-select="false"
-							item-key="uid"
-							show-select
-							class="elevation-1"
-							fixed-header
-							scrollable="false"
-							:height="$vuetify.breakpoint.height/3"
-						></v-data-table>
-						<v-spacer></v-spacer>
-						<v-card-actions>
+						<v-btn
+						class="black--text mt-5 mb-3 mx-auto"
+						height="40"
+						width="200"
+						large
+						@click="invite_user()"
+						>招待</v-btn>
 						<v-btn
 							class="black--text mt-5 mb-3 mx-auto"
 							height="40"
-							color=""
+							width="200"
 							large
-							@click="invite_user()"
-						>招待</v-btn>
-						</v-card-actions>
-					</v-dialog>
-				</v-card>
+							@click="dialog=false"
+						>キャンセル</v-btn>
+					</v-row>
+				</v-dialog>
+			</v-card>
 		</v-col>
 	</v-row>
 </template>

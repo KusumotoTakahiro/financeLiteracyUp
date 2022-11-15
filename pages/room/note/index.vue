@@ -1,64 +1,71 @@
 <template>
-	<v-row align-content="center" justify="center">
+	<v-row align-content="center" justify="center" class="bg-yellow">
 		<v-col cols="12" xs="12" sm="12" md="12" lg="12">
-			<v-dialog
-				v-model="dialog1"
-				outlined
-				hide-overlay
-				:height="$vuetify.breakpoint.height"
-				:max-width="width"
-				content-class="rounded-lg elevation-3"
-        transition="dialog-bottom-transition"
-				persistent
+			<v-card
+				class="
+					d-flex
+          justify-center
+					mx-auto
+        "
+        elevation="10"
+        :width="$vuetify.breakpoint.width-50"
 			>
-				<v-alert 
-					class="
-						justify-center 
-						text-center 
-						text-h6
-						pb-0
-					"> 通知 </v-alert>
-				<v-data-table
-					:headers="headers"
-					:items="notes"
-					item-key="uid"
-					class="elevation-1"
-					fixed-header
-					:height="$vuetify.breakpoint.height"
-				>
-				<template #[`item.approve`]="{ item }">
-					<v-radio-group
-						v-model="item.approve"
-						row 
+				<div class="header">
+					<v-alert 
+						class="
+							text-center
+							text-h6
+							my-0
+							bg-grad
+							lime--text
+							text--lighten-3
+							"
+						border="bottom"
+						colored-border
+						color="blue accent-5"
+						elevation="2"
+					> 通知
+					</v-alert>
+				</div>
+				<div class="main mb-10 mt-10">
+					<v-data-table
+						:headers="headers"
+						:items="notes"
+						item-key="uid"
+						class="elevation-0"
+						fixed-header
+						:height="$vuetify.breakpoint.height-200"
 					>
-						<v-radio
-							label="認める"
-							value="approve"
-						></v-radio>
-						<v-radio
-							label="認めない"
-							value="disapprove"
-						></v-radio>
-					</v-radio-group>
-				</template>
-				</v-data-table>
-				<v-row 
-					class="mt-3 mb-3 mx-auto"
-					align-content="center" 
-					justify="space-around" 
-					style="height:40px">
-					<v-btn
-						class="black--text"
-						height="40"
-						@click="reportProgress()"
-					>　返 信　</v-btn>
-                    <v-btn
-						class="black--text"
-						height="40"
-						@click="goToHome()"
-					>Homeに戻る</v-btn>
-				</v-row>
-			</v-dialog>
+						<template #[`item.approve`]="{ item }">
+							<v-radio-group
+								v-model="item.approve"
+								row 
+							>
+								<v-radio
+									label="認める"
+									value="approve"
+								></v-radio>
+								<v-radio
+									label="認めない"
+									value="disapprove"
+								></v-radio>
+							</v-radio-group>
+						</template>
+					</v-data-table>
+					<v-row
+						class="mt-3 mb-3 mx-auto"
+						align-content="center"
+						justify="space-around"
+					>
+						<v-btn
+							class="mx-auto mb-1" width="7rem" @click="reportProgress()"
+						>　返 信　</v-btn>
+						<v-btn class="mx-auto mb-1" width="7rem" @click="goToHome()">
+							Homeに戻る
+						</v-btn>
+					</v-row>
+				</div>
+			</v-card>
 			<v-dialog
 				v-model="cdialog1"
 				outlined

@@ -239,7 +239,7 @@ export default ({
       else if (!this.is_long(this.content)) {
         flag = false;
         this.$store.commit("addMessage", {
-          text: `内容の説明が短いです`,
+          texat: `内容の説明が短いです`,
           risk: 3,
         });
       }

@@ -1,6 +1,63 @@
 <template>
-  <v-row align-content="center" justify="center">
+  <v-row align-content="center" justify="center" class="bg-yellow">
     <v-col cols="12" sm="12" md="12" lg="12" xl="12">
+      <v-card
+        class="
+					d-flex
+          justify-center
+					mx-auto
+        "
+        elevation="10"
+        :width="$vuetify.breakpoint.width-50"
+      >
+        <div class="header">
+					<v-alert 
+						class="
+							text-center
+							text-h6
+							my-0
+							bg-grad
+							lime--text
+							text--lighten-3
+							"
+						border="bottom"
+						colored-border
+						color="blue accent-5"
+						elevation="2"
+					> 現在の罰則一覧
+					</v-alert>
+				</div>
+        <div class="main mb-10 mt-10">
+        <v-data-table
+          v-model="selected"
+          :headers="headers"
+          :items="fines"
+          :single-select="false"
+          item-key="id"
+          show-select
+          class="elevation-0"
+          fixed-header
+          :height="$vuetify.breakpoint.height - 210"
+        ></v-data-table>
+        <v-row
+          class="mt-3 mb-3 mx-auto"
+          align-content="center"
+          justify="space-around"
+        >
+          <v-btn class="mx-auto mb-1" width="7rem" @click="dialog=true">
+            追加
+          </v-btn>
+          <v-btn class="mx-auto mb-1" width="7rem" @click="delete_items()">
+            削除
+          </v-btn>
+          <v-btn
+            class="mx-auto mb-1"
+            width="7rem"
+            @click="goToHome()"
+          >Homeに戻る</v-btn>
+        </v-row>
+        </div>
+      </v-card>
       <v-dialog
         v-model="dialog"
         :height="$vuetify.breakpoint.height"
@@ -73,46 +130,7 @@
           </v-card-actions>
         </v-card>
       </v-dialog>
-      <v-dialog
-        v-model="main_dialog"
-        outlined
-        hide-overlay 
-        
-        :max-width="width"
-        content-class="rounded-lg elevation-3"
-        transition="dialog-bottom-transition"
-        persistent
-      >
-        <v-alert class="justify-center text-center text-h5"> 罰則一覧 </v-alert>
-        <v-data-table
-          v-model="selected"
-          :headers="headers"
-          :items="fines"
-          :single-select="false"
-          item-key="id"
-          show-select
-          class="elevation-1"
-          fixed-header
-          :height="$vuetify.breakpoint.height - 350"
-        ></v-data-table>
-        <v-row
-          class="mt-3 mb-3 mx-auto"
-          align-content="center"
-          justify="space-around"
-        >
-          <v-btn class="mx-auto mb-1" width="7rem" @click="dialog=true">
-            追加
-          </v-btn>
-          <v-btn class="mx-auto mb-1" width="7rem" @click="delete_items()">
-            削除
-          </v-btn>
-          <v-btn
-            class="mx-auto mb-1"
-            width="7rem"
-            @click="goToHome()"
-          >Homeに戻る</v-btn>
-        </v-row>
-      </v-dialog>
+      
     </v-col>
   </v-row>
 </template>
@@ -132,7 +150,10 @@ import {
 import {
   fireStore,
 } from "~/plugins/firebase";
-import {authStateChanged} from '@/plugins/auth'
+import {
+  authStateChanged,
+  saveHistory,
+} from '@/plugins/auth'
 
 export default ({
   name: 'fineParentPage',
@@ -147,6 +168,7 @@ export default ({
       isLogin: false,
       roomPath: null,
       fineCollRef: null,
+      user: null,
       selected: [],
       headers: [
         {
@@ -168,6 +190,7 @@ export default ({
     console.log(user);
     if (user.uid) {
       this.isLogin=true;
+      this.user = user;
       try {
         //ログインユーザの情報から所属するグループのfinesの参照を取得
         const docRef = doc(fireStore, "users", user.uid);
@@ -226,10 +249,13 @@ export default ({
       }
       if (flag) {
         try {
-          const fineRef = await addDoc(this.fineCollRef, {
+          await addDoc(this.fineCollRef, {
             content: this.content,
             price: this.price,        
           })
+          await saveHistory(this.roomPath, this.user.uid, 
+            `${this.user.displayName}が${this.content}を『罰則』に追加しました`
+          )
         }
         catch(error) {
           console.log('create_item error');
@@ -247,6 +273,9 @@ export default ({
         if( obj.hasOwnProperty(key) ) {
           try {
             await deleteDoc(doc(fireStore, "groups", this.roomPath, "fines", obj[key].id));
+            await saveHistory(this.roomPath, this.user.uid, 
+              `${this.user.displayName}が${obj[key].content}を『罰則』から削除しました`
+            )
           }
           catch(error) {
             console.log(error)

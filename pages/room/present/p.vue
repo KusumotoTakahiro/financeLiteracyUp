@@ -1,13 +1,67 @@
 <template>
-  <v-row>
+  <v-row align-content="center" justify="center" class="bg-yellow">
     <v-col cols="12" sm="12" md="12" lg="12" xl="12">
+      <v-card
+        class="
+					d-flex
+          justify-center
+					mx-auto
+        "
+        elevation="10"
+        :width="$vuetify.breakpoint.width-50"
+      >
+      <div class="header">
+        <v-alert 
+          class="
+            text-center 
+            text-h6
+            my-0
+            bg-grad
+            lime--text
+            text-ligten-3
+            "
+          border="bottom"
+          colored-border
+          color="blue accent-5"
+          elevation="2"> 現在のご褒美一覧 
+        </v-alert>
+      </div>
+      <div class="main mb-10 mt-10">
+        <v-data-table
+          v-model="selected"
+          :headers="headers"
+          :items="presents"
+          :single-select="false"
+          item-key="id"
+          show-select
+          class="elevation-0"
+          fixed-header
+          :height="$vuetify.breakpoint.height-210"
+        ></v-data-table>
+        <v-row
+          class="mt-3 mb-3 mx-auto"
+          align-content="center"
+          justify="space-around"
+        >
+          <v-btn class="mx-auto mb-1" width="7rem" @click="dialog=true">
+            追加
+          </v-btn>
+          <v-btn class="mx-auto mb-1" width="7rem" @click="delete_items()">
+            削除
+          </v-btn>
+          <v-btn class="mx-auto mb-1" width="7rem" @click="goToHome()">
+            Homeに戻る
+          </v-btn>
+        </v-row>
+      </div>
+      </v-card>
       <v-dialog
         v-model="dialog"
         :height="$vuetify.breakpoint.height"
         max-width="600"
         hide-overlay
         outlined
-        content-class="rounded-lg elevation-0"
+        content-class="rounded-lg elevation-2"
         transition="dialog-bottom-transition"
       >
         <v-card 
@@ -16,7 +70,7 @@
           outlined
           shaped
         >
-          <v-card-title class="justify-center">ご褒美追加</v-card-title>
+          <v-card-title class="justify-center pt-0 pb-0">ご褒美追加</v-card-title>
           <v-card-text>
             <template>
               <div>
@@ -84,6 +138,7 @@
                   ticks="always"
                   step="5"
                   thumb-label
+                  class="pb-0"
                 ></v-slider>
                 <v-btn
                   class="black--text mt-5"
@@ -95,7 +150,7 @@
               </div>
             </template>
           </v-card-text>
-          <v-card-actions class="justify-end">
+          <v-card-actions class="justify-end pb-0 pt-0">
             <v-btn
               text
               @click="dialog = false"
@@ -103,43 +158,7 @@
           </v-card-actions>
         </v-card>
       </v-dialog>
-      <v-dialog
-        v-model="main_dialog"
-        outlined
-        hide-overlay 
-        :max-width="width"
-        content-class="rounded-lg elevation-3"
-        transition="dialog-bottom-transition"
-        persistent
-      >
-      <v-alert class="justify-center text-center text-h5"> 現在のご褒美一覧 </v-alert>
-        <v-data-table
-          v-model="selected"
-          :headers="headers"
-          :items="presents"
-          :single-select="false"
-          item-key="id"
-          show-select
-          class="elevation-1"
-          fixed-header
-          :height="$vuetify.breakpoint.height"
-        ></v-data-table>
-        <v-row
-          class="mt-3 mb-3 mx-auto"
-          align-content="center"
-          justify="space-around"
-        >
-          <v-btn class="mx-auto mb-1" width="7rem" @click="dialog=true">
-            追加
-          </v-btn>
-          <v-btn class="mx-auto mb-1" width="7rem" @click="delete_items()">
-            削除
-          </v-btn>
-          <v-btn class="mx-auto mb-1" width="7rem" @click="goToHome()">
-            Homeに戻る
-          </v-btn>
-        </v-row>
-      </v-dialog>
+      
     </v-col>
   </v-row>
 </template>
@@ -159,7 +178,10 @@ import {
 import {
   fireStore,
 } from "~/plugins/firebase";
-import {authStateChanged} from '@/plugins/auth'
+import {
+  authStateChanged,
+  saveHistory,
+} from '@/plugins/auth'
 import { fromStringWithSourceMap } from "source-list-map";
 
 export default ({
@@ -177,6 +199,7 @@ export default ({
       roomPath: null,
       presentCollRef: null,
       memberCollRef: null,
+      user: null,
       children: [],
       selected: [],
       headers: [
@@ -203,6 +226,7 @@ export default ({
     console.log(user);
     if (user.uid) {
       this.isLogin=true;
+      this.user = user;
       try {
         //ログインユーザの情報から所属するグループのpresentsの参照を取得
         const docRef = doc(fireStore, "users", user.uid);
@@ -312,6 +336,9 @@ export default ({
                 attribute: forWhom.data.attribute //属性は確認用,
               }      
             })
+            await saveHistory(this.roomPath, this.user.uid, 
+              `${this.user.displayName}が${forWhom.data.name}を対象に，${this.content}を『ご褒美』に追加しました`
+            )
           }
           
         }
@@ -333,10 +360,12 @@ export default ({
           console.log(obj)
           try {
             await deleteDoc(doc(fireStore, "groups", this.roomPath, "presents", obj[key].id));
+            await saveHistory(this.roomPath, this.user.uid, 
+              `${this.user.displayName}が${obj[key].content}を『ご褒美』から削除しました`
+            )
           }
           catch(error) {
             console.log(error)
-            
           }
         }
       }

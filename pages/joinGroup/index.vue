@@ -289,6 +289,9 @@ export default {
             //最後に通知は消しておく．（実際は消して消さなくてもいいかも）
             const inviteRef = doc(fireStore, "users", this.uid, "comminicate", this.uid);
             await deleteDoc(inviteRef);
+
+            //ログインしたことをstateに保存
+            this.$store.commit("setIsLogin", true);
             this.$router.push('/room');
           }
           catch(error) {

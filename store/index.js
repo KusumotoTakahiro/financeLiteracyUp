@@ -22,6 +22,7 @@ function getDefaultState() {
     tax: {},
     fine: {},
     history: {},
+    isLogin: false,
   }
 }
 
@@ -82,6 +83,9 @@ export const mutations = {
   },
   setHistory: (state, history) => {
     state.history = history;
+  },
+  setIsLogin: (state, flag) => {
+    state.isLogin = flag;
   }
 }
 

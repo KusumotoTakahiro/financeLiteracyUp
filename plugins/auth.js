@@ -1,4 +1,4 @@
-import { getAuth, onAuthStateChanged } from 'firebase/auth'
+import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth'
 
 const auth = getAuth();
 
@@ -16,8 +16,20 @@ export const authStateChanged = () => {
         resolve(user);
       }
       else {
-        reject(error);
+        console.log('ユーザの認証errorです')
+        redirect('/login');
       }
+    })
+  })
+}
+
+export const userLogout = () => {
+  return new Promise((resolve, reject) => {
+    signOut(auth).then(()=> {
+      console.log("ログアウトしました");
+    })
+    .catch( (error) => {
+      console.log(`ログアウト時にエラーが発生しました(${error})`);
     })
   })
 }

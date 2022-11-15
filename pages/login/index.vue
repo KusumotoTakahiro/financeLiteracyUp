@@ -340,6 +340,7 @@ export default {
               text: "ログインしました",
               risk: 0,
             });
+            this.$store.commit("setIsLogin", true);
             try {
               const docRef = doc(fireStore, "users", this.userUID);
               const querySnapshot = await getDoc(docRef);

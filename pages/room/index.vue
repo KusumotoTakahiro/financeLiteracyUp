@@ -47,8 +47,11 @@
           </v-hover>
           </template>
           </v-card>
+          <v-row justify="center">
+            <v-btn @click="logout()">ログアウト</v-btn>
+          </v-row>
         </div>
-        <div v-if="attribute=='child'">
+        <div v-else-if="attribute=='child'">
           <v-card>
           <v-alert class="justify-center text-center text-h4"> {{this.roomName}} </v-alert>
           <v-alert class="jsutify-center text-center balance">
@@ -98,6 +101,15 @@
             </v-hover>
           </template>
           </v-card>
+          <v-row justify="center">
+            <v-btn @click="logout()">ログアウト</v-btn>
+          </v-row>
+        </div>
+        <div v-else>
+          ログインセッションが切れています
+          <v-row justify="center">
+            <v-btn @click="$router.push('/login')">ログイン画面へ</v-btn>
+          </v-row>
         </div>
       <div>user.attribute : {{attribute}}</div>
       <div>room.name : {{roomName}}</div>
@@ -107,7 +119,7 @@
 <script>
 import {getAuth} from 'firebase/auth'
 import * as func from "~/plugins/myPlugins";
-import {authStateChanged} from '@/plugins/auth'
+import {authStateChanged, userLogout} from '@/plugins/auth'
 import { 
   fireStore,
 } from '@/plugins/firebase'
@@ -267,8 +279,7 @@ export default {
     // firebase authenticationから現在ログインしているユーザの状態を取る
     let user = await authStateChanged();
     console.log(user);
-    if (user.uid) {
-      this.isLogin = true;
+    if (user.uid) { //useのuidで判定していたが，それだとnullの時にエラーが生じる
       try {
         const docRef = doc(fireStore, "users", user.uid);
         const querySnapshot = await getDoc(docRef);
@@ -291,16 +302,30 @@ export default {
       }
       catch(error) {
         console.log(error);
+        console.log('ログインしてください')
+        this.$store.commit("addMessage", {
+          text: "ユーザが確認できませんでした．ログインしてください",
+          risk: 3,
+        })
+        this.$router.push('/');
       }
     }
     else {
+      console.log('ログインしてください')
       this.$store.commit("addMessage", {
-        text: "ログインしてください",
+        text: "ユーザが確認できませんでした．ログインしてください",
         risk: 3,
       })
       this.$router.push('/');
     }
   },
+  methods: {
+    async logout() {
+      this.$router.push("/");
+      this.$store.commit("setIsLogin", false);
+      await userLogout();
+    }
+  }
 }
 </script>
 <style scoped>

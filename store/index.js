@@ -13,7 +13,7 @@ function getDefaultState() {
     runningLogin: false,
     tasks: false,
     messages: [],
-    title: "金融リテラシーを高める!",
+    title: "金融リテラシー",
     user: null,
     idToken: null,
     shop: {},
@@ -27,6 +27,10 @@ function getDefaultState() {
 }
 
 export const state = getDefaultState();
+// export const state = () => ({
+//   counter: 0
+// })
+
 
 // 同期処理
 export const mutations = {
@@ -86,6 +90,10 @@ export const mutations = {
   },
   setIsLogin: (state, flag) => {
     state.isLogin = flag;
+  },
+  //追加
+  increment (state) {
+    state.counter++
   }
 }
 

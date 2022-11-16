@@ -88,3 +88,24 @@ sw.*
 
 # Vim swap files
 *.swp
+
+# Created by https://www.toptal.com/developers/gitignore/api/nuxtjs,firebase
+# Edit at https://www.toptal.com/developers/gitignore?templates=nuxtjs,firebase
+
+### Firebase ###
+.idea
+**/node_modules/*
+**/.firebaserc
+
+### Firebase Patch ###
+.runtimeconfig.json
+.firebase/
+
+### Nuxtjs ###
+# Nuxt build
+.nuxt
+
+# Nuxt generate
+dist
+
+# End of https://www.toptal.com/developers/gitignore/api/nuxtjs,firebase

@@ -1,7 +1,7 @@
 <template>
   <v-row align-content="center" justify="center">
     <v-col cols="12" sm="12" md="12" lg="12" xl="12" align="center">
-      <v-alert class="justify-center text-center text-h5"> 金融リテラシーを高める! </v-alert>
+      <v-alert class="justify-center text-center text-h5"> 金融リテラシー </v-alert>
       <v-card
         class="
           d-flex 

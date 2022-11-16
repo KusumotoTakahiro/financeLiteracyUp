@@ -1,70 +1,98 @@
 <template>
-	<v-row align-content="center" justify="center">
+	<v-row align-content="center" justify="center" class="bg-yellow">
 		<v-col cols="12" xs="12" sm="12" md="12" lg="12">
-			<v-dialog
-				v-model="dialog1"
-				outlined
-				hide-overlay
-				:height="$vuetify.breakpoint.height"
-				:max-width="width"
-				content-class="rounded-lg elevation-3"
-        transition="dialog-bottom-transition"
-				persistent
-			>
-			<v-alert 
-				class="
-					justify-center 
-					text-center 
-					text-h6
-					pb-0
-				"> 課税対象一覧 </v-alert>
-			<v-data-table
-			v-model="selected"
-        :headers="headers"
-        :items="works"
-        :single-select="false"
-        item-key="content"
-        show-select
-        class="elevation-1"
-        fixed-header
-        :height="$vuetify.breakpoint.height/5*3"
-			></v-data-table>
-			<v-row 
-				class="mt-3 mb-3 mx-auto"
-				align-content="center" 
-				justify="space-around" 
-				style="height:40px">
-				<v-btn
-					class="black--text px-2"
-					height="40"
-					@click="goToHome()"
-				>Homeに戻る</v-btn>
-			</v-row>
-			</v-dialog>
+			<v-card
+        class="
+					d-flex
+          justify-center
+					mx-auto
+        "
+        elevation="10"
+        :width="$vuetify.breakpoint.width-50"
+      >
+        <div class="header">
+          <v-alert 
+            class="
+              text-center 
+              text-h6
+              my-0
+              bg-grad
+              lime--text
+              text-ligten-3
+              "
+            border="bottom"
+						colored-border
+						color="blue accent-5"
+						elevation="2">現在の課税対象一覧
+          </v-alert>
+        </div>
+        <div class="main mb-10 mt-10">
+					<v-data-table
+							:headers="headers"
+							:items="taxs"
+							:single-select="false"
+							item-key="id"
+							class="elevation-0"
+							fixed-header
+							:height="$vuetify.breakpoint.height-210"
+						></v-data-table>
+          <v-row
+            class="mt-3 mb-3 mx-auto"
+            align-content="center"
+            justify="space-around"
+          >
+            <v-btn class="mx-auto mb-1" width="7rem" @click="goToHome()">
+              Homeに戻る
+            </v-btn>
+          </v-row>
+        </div>
+      </v-card>
 		</v-col>
 	</v-row>
 </template>
 <script>
-
+import {
+  collection,
+  doc,
+  setDoc,
+  updateDoc,
+  getDoc,
+  getDocs,
+  addDoc,
+  deleteDoc,
+} from "firebase/firestore";
+import {
+  fireStore,
+} from "~/plugins/firebase";
+import {
+  authStateChanged,
+  saveHistory,
+} from '@/plugins/auth'
 
 export default ({
 	data() {
 		return {
-			dialog1: true,
 			headers: [
 				{
-					text: '内容',
+					text: '税金項目',
 					align: 'start',
 					sortable: false,
 					value: 'content',
 				},
 				{
+          text: '課税対象',
+          value: 'target'
+        },
+				{
 					text: '税率（%）',
 					value: 'price'
 				}
 			],
-			works: [],
+			taxs: [],
 			selected: [],
+			user: null,
+			roomPath: null,
+			taxCollRef: null,
 		}
 	},
 	computed: {
@@ -72,13 +100,46 @@ export default ({
 			return this.$vuetify.breakpoint.width/5*4;
 		}
 	},
+	async mounted() {
+    let user = await authStateChanged();
+    console.log(user);
+    if (user.uid) {
+      this.user = user;
+      try {
+        //ログインユーザの情報から所属するグループのtaxsの参照を取得
+        const docRef = doc(fireStore, "users", user.uid);
+        const querySnapshot = await getDoc(docRef);
+        const roomPath = querySnapshot.data().group;
+        this.roomPath = roomPath;
+        const taxCollRef = collection(fireStore, "groups", roomPath, "taxs")
+        this.taxCollRef = taxCollRef;
+        
+        //参照の中からtaxsを取得して，taxs(collection)の中のdocumentを全取得
+        const taxs_all = await getDocs(taxCollRef);
+        console.log(taxs_all)
+        taxs_all.forEach(doc => {
+          //ここでtaxsを更新する =>データがテーブルに反映されるはず
+          let data = doc.data();
+          data.id = doc.id;
+          this.taxs.push(data);
+        })
+      }
+      catch(error) {
+        console.log(error);
+      }
+    }
+    else {
+      this.$store.commit("addMessage", {
+        text: "ログインしてください",
+        risk: 3, 
+      })
+      this.$router.push('/');
+    }
+  },
 	methods: {
 		goToHome() {
 			this.$router.push('/room');
 		},
-		reportProgress() {
-			console.log('report progress')
-		}
 	}
 })
 </script>

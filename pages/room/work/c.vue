@@ -1,51 +1,57 @@
 <template>
-	<v-row align-content="center" justify="center">
+	<v-row align-content="center" justify="center" class="bg-yellow">
 		<v-col cols="12" xs="12" sm="12" md="12" lg="12">
-			<v-dialog
-				v-model="dialog1"
-				outlined
-				hide-overlay
-				:height="$vuetify.breakpoint.height"
-				:max-width="width"
-				content-class="rounded-lg elevation-3"
-        transition="dialog-bottom-transition"
-				persistent
-			>
-				<v-alert 
-					class="
-						justify-center 
-						text-center 
-						text-h6
-						pb-0
-					"> 現在のお仕事一覧 </v-alert>
-				<v-data-table
-				v-model="selected"
-					:headers="headers"
-					:items="works"
-					:single-select="false"
-					item-key="id"
-					show-select
-					class="elevation-1"
-					fixed-header
-					:height="$vuetify.breakpoint.height/5*3"
-				></v-data-table>
-				<v-row 
-					class="mt-3 mb-3 mx-auto"
-					align-content="center" 
-					justify="space-around" 
-					style="height:40px">
-					<v-btn
-						class="black--text"
-						height="40"
-						@click="report()"
-					>達成報告</v-btn>
-					<v-btn
-						class="black--text px-2"
-						height="40"
-						@click="goToHome()"
-					>Homeに戻る</v-btn>
-				</v-row>
-			</v-dialog>
+			<v-card
+        class="
+					d-flex
+          justify-center
+					mx-auto
+        "
+        elevation="10"
+        :width="$vuetify.breakpoint.width-50"
+      >
+			<div class="header">
+          <v-alert 
+            class="
+              text-center 
+              text-h6
+              my-0
+              bg-grad
+              lime--text
+              text-ligten-3
+              "
+            border="bottom"
+						colored-border
+						color="blue accent-5"
+						elevation="2"> 現在のお手伝い一覧 
+          </v-alert>
+        </div>
+        <div class="main mb-10 mt-10">
+          <v-data-table
+						v-model="selected"
+						:headers="headers"
+						:items="works"
+						:single-select="false"
+						item-key="id"
+						show-select
+						class="elevation-0"
+						fixed-header
+						:height="$vuetify.breakpoint.height-210"
+					></v-data-table>
+          <v-row
+            class="mt-3 mb-3 mx-auto"
+            align-content="center"
+            justify="space-around"
+          >
+						<v-btn class="mx-auto mb-1" width="7rem" @click="report()" >
+							達成報告
+						</v-btn>
+            <v-btn class="mx-auto mb-1" width="7rem" @click="goToHome()">
+              Homeに戻る
+            </v-btn>
+          </v-row>
+        </div>
+			</v-card>
 			<v-dialog
 				v-model="cdialog"
 				outlined
@@ -100,7 +106,10 @@ import {
 import {
   fireStore,
 } from "~/plugins/firebase";
-import {authStateChanged} from '@/plugins/auth'
+import {
+	authStateChanged,
+	saveHistory,
+} from '@/plugins/auth'
 
 
 
@@ -211,14 +220,10 @@ export default ({
 					flag = false;
 				}
 				try {
-					const hiscoll = collection(fireStore, "groups", this.roomPath, "history");
-					let d = `user: ${this.user.displayName}が${obj[key].content}を達成したと報告しました`
-					const history = await addDoc(hiscoll, {
-						rid: this.user.uid,
-						cid: null,
-						date: serverTimestamp(),
-						data: d,
-					})
+					//履歴を残す
+					await saveHistory(this.roomPath, this.user.uid, 
+            `${this.user.displayName}が${obj[key].content}の達成を報告しました`
+          )
 				}
 				catch(error) {
 					console.log('historyへの通信エラー発生');

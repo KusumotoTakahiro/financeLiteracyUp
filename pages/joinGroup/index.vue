@@ -59,8 +59,7 @@
             :height="$vuetify.breakpoint.height/3*2"
           >
             <v-card-text>
-              ああああああああああああ
-              いいいいいいいいいいいい
+              未実装．今後実装予定
             </v-card-text>
           </v-card>
         </v-dialog>

@@ -70,6 +70,7 @@
               :return-value.sync="props.item.data.balance"
               large
               persistent
+              style="height:auto"
               @save="save(props.item.data.balance, props.item.uid, props.item.data.name)"
             >
               <div>{{ props.item.data.balance }}</div>

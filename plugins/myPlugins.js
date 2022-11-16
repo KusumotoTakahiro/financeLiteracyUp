@@ -28,8 +28,9 @@ export const isHalf = (text) => {
   if (!text) {
     return false;
   }
+  //半角英数字空文字NG
   let regex = new RegExp(
-    /^[a-zA-Z]+$/
+    /^[0-9a-zA-Z]+$/
   );
   if (text.match(regex)) {
     return true;

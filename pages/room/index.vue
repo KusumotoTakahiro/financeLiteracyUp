@@ -111,8 +111,8 @@
             <v-btn @click="$router.push('/login')">ログイン画面へ</v-btn>
           </v-row>
         </div>
-      <div>user.attribute : {{attribute}}</div>
-      <div>room.name : {{roomName}}</div>
+      <!-- <div>user.attribute : {{attribute}}</div>
+      <div>room.name : {{roomName}}</div> -->
     </v-col>
   </v-row>
 </template>

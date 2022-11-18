@@ -292,7 +292,7 @@ export default ({
       }
       const userRef = doc(fireStore, "users", userId);
       await updateDoc(userRef, {
-        balance: balance,
+        balance: Number(balance),
       })
       this.$store.commit("addMessage", {
         text: `残高を更新しました`,

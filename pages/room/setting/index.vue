@@ -305,7 +305,7 @@ export default ({
     },
     open(balance) {
       //一時的に保存しておく
-      this.tempBalance = balance;
+      this.tempBalance = Nubmer(balance);
     }
     
   }

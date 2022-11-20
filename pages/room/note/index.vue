@@ -34,6 +34,8 @@
 						item-key="uid"
 						class="elevation-0"
 						fixed-header
+						hide-default-header
+						hide-default-footer
 						:height="$vuetify.breakpoint.height-200"
 					>
 						<template #[`item.approve`]="{ item }">
@@ -133,6 +135,11 @@ export default ({
 		return {
 			dialog1: true,
 			cdialog1: false,
+			work_taxs: [],
+			shop_taxs: [],
+			fine_taxs: [],
+			present_taxs: [],
+			else_taxs: [],
 			headers: [
 				{
 					text: '承認',
@@ -275,6 +282,7 @@ export default ({
 			this.member.forEach(one => {
 				obj[one] = 0; //各メンバーの金額を初期化
 			})
+			await this.get_taxs();
 			for (let i = 0; i < this.notes.length; i++) {
 				let note = this.notes[i];
 				let who = note.data.reporter;
@@ -298,7 +306,7 @@ export default ({
 					const querySnapshot = await getDoc(ref);
 					const balance = querySnapshot.data().balance;
 					await updateDoc(ref, {
-						balance: balance + price,
+						balance: Math.floor(balance + price),
 					})
 				}
 				else {
@@ -359,6 +367,7 @@ export default ({
 			})
 		},
 		async caluculate_price(approve, type, did) {
+			let vm = this;
 			let ref = null; //db参照先
 			let data = null; //db内のdocument
 			let original_price = 0; //documentの中のprice
@@ -384,17 +393,39 @@ export default ({
 			}
 			data = await getDoc(ref);
 			original_price = data.data().price;
+			let tax = 0;
+			let taxs = [];
 			switch (type) { //ここで元の値段に税金がかかる．今は未実装.
 				case "work":
-					original_price = original_price;
+					taxs = vm.work_taxs;
+					for (let i = 0; i < taxs.length; i++) {
+						tax = original_price*taxs[i].price/100;
+						original_price -= tax;
+					}
+					//original_price = original_price;
 					break;
 				case "present":
-					original_price = original_price;
+					taxs = vm.present_taxs;
+					for (let i = 0; i < taxs.length; i++) {
+						tax = original_price*taxs[i].price/100;
+						original_price -= tax;
+					}
+					//original_price = original_price;
 					break;
 				case "shop":
+					taxs = vm.shop_taxs;
+					for (let i = 0; i < taxs.length; i++) {
+						tax = original_price*taxs[i].price/100;
+						original_price += tax;
+					}
 					original_price = - original_price;
 					break;
 				case "fine":
+					taxs = vm.fine_taxs;
+					for (let i = 0; i < taxs.length; i++) {
+						tax = original_price*taxs[i].price/100;
+						original_price += tax;
+					}
 					original_price = - original_price;
 					break;
 				default:
@@ -403,6 +434,30 @@ export default ({
 					break;
 			}
 			return original_price;
+		},
+		async get_taxs() {
+			const taxRef = collection(fireStore, "groups", this.roomPath, "taxs")
+			const taxs = await getDocs(taxRef);
+			const vm = this;
+			taxs.forEach((doc)=>{
+				switch (doc.data().target) {
+					case "お手伝い":
+						vm.work_taxs.push(doc.data());
+						break;
+					case "商品":
+						vm.shop_taxs.push(doc.data());
+						break;
+					case "罰則":
+						vm.fine_taxs.push(doc.data());
+						break;
+					case "ご褒美":
+						vm.present_taxs.push(doc.data());
+						break;
+					default: 
+						vm.else_taxs.push(doc.data());
+				}
+			})
+			console.log(taxs);
 		},
 		async fetch_data() {
 			//sendProgressの後に実行される

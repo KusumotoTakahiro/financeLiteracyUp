@@ -161,7 +161,7 @@ export default ({
 				})
 			}
 			catch(error) {
-				console.log(error)
+				////console.log(error)
 			}
 		}
 		else {
@@ -194,7 +194,7 @@ export default ({
 			}
 		},
 		async reportProgress() {
-			console.log('report progress')
+			//console.log('report progress')
 			let obj = this.selected;
 			let flag = true;
 			for (let key in obj) {
@@ -216,8 +216,8 @@ export default ({
 					})
 				}
 				catch(error) {
-					console.log('commnunicateへの通信でエラー発生')
-					console.log(error);
+					//console.log('commnunicateへの通信でエラー発生')
+					//console.log(error);
 					flag = false;
 				}
 				try {
@@ -226,8 +226,8 @@ export default ({
           )
 				}
 				catch(error) {
-					console.log('historyへの通信エラー発生');
-					console.log(error);
+					//console.log('historyへの通信エラー発生');
+					//console.log(error);
 					flag = false;
 				}
 			}
@@ -249,7 +249,7 @@ export default ({
 					this.works.push(data);
 				}
 				catch(error) {
-					console.log(error);
+					//console.log(error);
 				}
 			})
 		}

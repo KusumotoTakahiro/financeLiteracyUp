@@ -136,7 +136,6 @@
                   min="0"
                   max="500"
                   ticks="always"
-                  step="5"
                   thumb-label
                   class="pb-0"
                 ></v-slider>

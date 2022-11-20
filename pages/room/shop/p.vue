@@ -43,6 +43,9 @@
             align-content="center"
             justify="space-around"
           >
+            <v-btn class="mx-auto mb-1" width="7rem" @click="dialog_2=true">
+              一括追加
+            </v-btn>
             <v-btn class="mx-auto mb-1" width="7rem" @click="dialog=true">
               追加
             </v-btn>
@@ -55,6 +58,164 @@
           </v-row>
         </div>
       </v-card>
+      <v-dialog
+        v-model="c_dialog_2"
+        outlined
+        hide-overlay
+        :height="$vuetify.breakpoint.height"
+        max-width="600"
+        content-class="rounded-lg elevation-2"
+        transition="dialog-bottom-transition"
+      >
+        <v-card 
+          class="py-5"
+          elevation="7"
+          outlined
+          shaped
+        >
+          <v-card-title class="justify-center">確認・修正</v-card-title>
+          <v-card-text>
+            <template>
+              <v-data-table
+                :headers="headers"
+                :items="new_csv"
+                item-key="id"
+                class="elevation-0"
+                fixed-header
+                hide-default-header
+              >
+                <template v-slot:item.content="props">
+                  <v-edit-dialog
+                    :return-value.sync="props.item.content"
+                    persistent
+                    style="height:auto"
+                    large
+                    @save="save"
+                    @cancel="cancel"
+                    @open="open"
+                    @close="close"
+                  >
+                    <div>{{ props.item.content }}</div>
+                    <template v-slot:input>
+                      <div class="mt-4 text-body-1 text-center">
+                        内容を変更
+                      </div>
+                      <v-text-field
+                        v-model="props.item.content"
+                        label="Edit"
+                        single-line
+                        autofocus
+                        class="input_case2 text-center"
+                      ></v-text-field>
+                    </template>
+                  </v-edit-dialog>
+                </template>
+                <template v-slot:item.price="props">
+                  <v-edit-dialog
+                    :return-value.sync="props.item.price"
+                    persistent
+                    style="height:auto"
+                    large
+                    @save="save"
+                    @cancel="cancel"
+                    @open="open"
+                    @close="close"
+                  >
+                    <div>{{ props.item.price }}</div>
+                    <template v-slot:input>
+                      <div class="mt-4 text-body-1 text-center">
+                        報酬を変更
+                      </div>
+                      <v-text-field
+                        v-model="props.item.price"
+                        label="Edit"
+                        single-line
+                        counter
+                        autofocus
+                        type="Number"
+                        class="input_case2 text-center"
+                      ></v-text-field>
+                    </template>
+                  </v-edit-dialog>
+                </template>
+              </v-data-table>
+              <div>  
+                <v-btn
+                  class="black--text mt-0"
+                  block
+                  height="40"
+                  color=""
+                  @click="create_items_from_csv()"
+                >登録</v-btn>
+              </div>
+            </template>
+          </v-card-text>
+          <v-card-actions class="justify-end">
+            <v-btn
+              text
+              @click="c_dialog_2 = false"
+            >Close</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+      <v-dialog
+        v-model="dialog_2"
+        outlined
+        hide-overlay
+        :height="$vuetify.breakpoint.height"
+        max-width="600"
+        content-class="rounded-lg elevation-2"
+        transition="dialog-bottom-transition"
+      >
+        <v-card 
+          class="py-5"
+          elevation="7"
+          outlined
+          shaped
+        >
+          <v-card-title class="justify-center">CSVから一括追加</v-card-title>
+          <v-card-text>
+            <template>
+              <div>
+                <v-file-input
+                  id="file"
+                  ref="file"
+                  show-size
+                  accept=".csv"
+                  @change="onFileChange"
+                  @click:clear="csv_data=null"
+                  label="csvファイルを入力してください"
+                ></v-file-input>
+              </div>
+              <div>  
+                <v-btn
+                  :disabled="disabled"
+                  class="black--text mt-5"
+                  block
+                  height="40"
+                  color=""
+                  @click="check_csv()"
+                >CSVから登録</v-btn>
+              </div>
+              <div>  
+                <v-btn
+                  class="black--text mt-5"
+                  block
+                  height="40"
+                  color=""
+                  @click="download_format()"
+                >フォーマットのダウンロード</v-btn>
+              </div>
+            </template>
+          </v-card-text>
+          <v-card-actions class="justify-end">
+            <v-btn
+              text
+              @click="dialog_2 = false"
+            >Close</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
       <v-dialog
         v-model="dialog"
         :height="$vuetify.breakpoint.height"
@@ -157,7 +318,11 @@ export default ({
   data() {
     return {
       dialog: false,
+      dialog_2: false,
+      c_dialog_2: false,
       main_dialog: true,
+      csv_data: null,
+      new_csv:[],
       content: "",
       price: null,
       isLogin: false,
@@ -220,6 +385,9 @@ export default ({
   computed: {
     width: function() {
       return this.$vuetify.breakpoint.width/5*4;
+    },
+    disabled: function() {
+      return this.csv_data===null? true : false;
     }
   },
   methods: {
@@ -311,7 +479,143 @@ export default ({
       let ok = true;
       if (content.length==1) ok = false;
       return ok;
-    }
+    },
+    download_format() {
+      console.log('format_download');
+      //文字列型の二次元配列データ
+      const data = [
+        ["content", "price"],
+        ["テレビ６０分（例）", "10"],
+        ["PC見放題（例）", "1000"]
+      ]
+
+      //作った二次元配列をCSV文字列に直す．
+      let csv_string = "";
+      for (let d of data) {
+        csv_string += d.join(",");
+        csv_string += '\r\n';
+      }
+
+      //ファイル名
+      const file_name = "format.csv";
+
+      //BOMを作る これをしないと文字化けした
+      var bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+
+      //CSVのバイナリデータを作る
+      const blob = new Blob([bom, csv_string], {type: "text/csv"});
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.download = file_name;
+      link.href = url;
+      link.click(); //リンクをクリックしたことにする．
+      URL.revokeObjectURL(link.href); //リンクに当てられたメモリを開放する
+    },
+
+    //現在のCSVデータに記入ミスがないかを確認表示する関数
+    check_csv() {
+      console.log('check_csv');
+      const vm = this;
+      vm.new_csv = []; //前のデータを空にする
+      this.c_dialog_2 = true;
+      //登録の際の記入ミスがないかをチェック
+      vm.csv_data.forEach((data, index) => {
+        if (!this.is_written(data.content, data.price)) {
+          this.$store.commit("addMessage", {
+            text: `${index+1}行目に記入漏れがあります`,
+            risk: 3,
+          });
+        }
+        else if (!this.is_long(data.content)) {
+          this.$store.commit("addMessage", {
+            texat: `${index+1}行目の内容の説明が短いです`,
+            risk: 3,
+          });
+        }
+        data.id = index;
+        this.new_csv.push(data);
+      })
+    },
+
+    //最終的に，「登録する」ボタンを押すと実行される
+    async create_items_from_csv() {
+      console.log('create_items_from_csv');
+      let vm = this;
+      const data = vm.new_csv;
+      const length = data.length;
+      console.log(data);
+      console.log(length);
+      for (let i = 0; i < length; i++) {
+        await this.create_item_for_csv(data[i].content, data[i].price);
+      }
+      this.fetch_shops();
+      this.c_dialog_2 = false;
+      this.dialog_2 = false;
+    },
+    //create_items_from_csv内で実行される関数
+    async create_item_for_csv(content, price) { 
+      console.log('create_item_for_csv');
+      console.log(content, price);
+      try {
+        await addDoc(this.shopCollRef, {
+          content: String(content),
+          price: Number(price),        
+        })
+        await saveHistory(this.roomPath, this.user.uid, 
+          `${this.user.displayName}が${content}を『商品』に追加しました`
+        )
+      }
+      catch(error) {
+        console.log('create_item error');
+        console.log(error);
+      }
+      this.new_csv = []; //登録終わったので空にする
+    },
+    //fileがUploadされたときにcsv_dataを更新する(csv_dataを取り込む)
+    onFileChange(file) {
+      const vm = this;
+      if (file) {
+        if (file.name.indexOf('.csv') > -1) {
+          vm.get_csv_data(file)
+          .then(vm.process_csv_data)
+        }
+      }
+      else {
+        console.log('not in file');
+      }
+    },
+    //fileReaderにファイルが読み込まれた時の処理．
+    get_csv_data(file) {
+      return new Promise((resolve, reject) => {
+        console.log('get_csv_data');
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result.split('\r\n'));
+        reader.onerror = () => reject(error);
+        reader.readAsText(file);
+      })
+    },
+    //fileReaderの読み込んだファイルを扱えるデータとして読み込む処理.
+    process_csv_data(res) {
+      console.log('process_csv_data');
+      let vm = this;
+      let result = res;
+      let header = result[0].split(',')
+      result.shift();
+      result.pop();
+      vm.csv_data = result.map(item=>{
+        let datas = item.split(',');
+        let temp = {};
+        for (const index in datas) {
+          let key = header[index];
+          temp[key] = datas[index];
+        }
+        return temp;
+      })
+    },
+    save() {console.log('save')},
+    cancel() {},
+    open() {},
+    close() {},
   }
 })
 </script>

@@ -63,7 +63,6 @@
             item-key="uid"
             class="elevation-1"
             fixed-header
-            :height="$vuetify.breakpoint.height-450"
           >
           <template v-slot:item.data.balance="props">
             <v-edit-dialog

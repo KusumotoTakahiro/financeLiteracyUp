@@ -282,7 +282,7 @@ export default ({
       )
     },
     async save(balance, userId, userName) {
-      if (!String(balance).match(/^[0-9]+$/)) {
+      if (!String(balance).match(/^[+,-]?([1-9]\d*|0)$/)) {
         this.$store.commit("addMessage", {
           text: `半角数字で入力してください`,
           risk: 3,

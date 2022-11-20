@@ -43,6 +43,9 @@
             align-content="center"
             justify="space-around"
           >
+            <v-btn class="mx-auto mb-1" width="7rem" @click="dialog_2=true">
+              一括追加
+            </v-btn>
             <v-btn class="mx-auto mb-1" width="7rem" @click="dialog=true">
               追加
             </v-btn>
@@ -55,6 +58,61 @@
           </v-row>
         </div>
       </v-card>
+      <v-dialog
+        v-model="dialog_2"
+        outlined
+        hide-overlay
+        :height="$vuetify.breakpoint.height"
+        max-width="600"
+        content-class="rounded-lg elevation-2"
+        transition="dialog-bottom-transition"
+      >
+        <v-card 
+          class="py-5"
+          elevation="7"
+          outlined
+          shaped
+        >
+          <v-card-title class="justify-center">お手伝い一括追加</v-card-title>
+          <v-card-text>
+            <template>
+              <div>
+                <v-file-input
+                  show-size
+                  accept=".csv"
+                  @change="onFileChange"
+                  label="csvファイルを入力してください"
+                ></v-file-input>
+              </div>
+              <div>  
+                <v-btn
+                  :disabled="disabled"
+                  class="black--text mt-5"
+                  block
+                  height="40"
+                  color=""
+                  @click="create_items_from_csv()"
+                >登録</v-btn>
+              </div>
+              <div>  
+                <v-btn
+                  class="black--text mt-5"
+                  block
+                  height="40"
+                  color=""
+                  @click="download_format()"
+                >フォーマットのダウンロード</v-btn>
+              </div>
+            </template>
+          </v-card-text>
+          <v-card-actions class="justify-end">
+            <v-btn
+              text
+              @click="dialog_2 = false"
+            >Close</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
       <v-dialog
         v-model="dialog"
         outlined
@@ -157,7 +215,9 @@ export default ({
   data() {
     return {
       dialog: false,
+      dialog_2: false,
       main_dialog: true,
+      file: null,
       content: "",
       price: null,
       isLogin: false,
@@ -220,7 +280,10 @@ export default ({
   computed: {
 		width: function() {
 			return this.$vuetify.breakpoint.width/5*4;
-		}
+		},
+    disabled: function() {
+      return this.file===null? true : false;
+    }
 	},
   methods: {
     goToHome() {
@@ -313,6 +376,28 @@ export default ({
       if (content.length==1) ok = false;
       return ok;
     }
+  },
+  download_format() {
+    console.log('format_download');
+  },
+  create_items_from_csv() {
+    console.log('create_items_from_csv');
+  },
+  create_item_for_csv() { 
+    console.log('create_item_for_csv');
+  },
+  onFileChange(file) {
+    return new Promise((resolve, reject)=> {
+      if (file) {
+        if (file.name.indexOf('.csv') > -1) {
+          this.file = file;
+        }
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(JSON.parse(e.target.result.split('\r\n')));
+      reader.onerror = () => reject(error);
+      reader.readerAsText(file);
+    })
   }
 })
 </script>

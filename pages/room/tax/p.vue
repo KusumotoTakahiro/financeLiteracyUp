@@ -289,6 +289,13 @@ export default ({
           risk: 3,
         });
       }
+      else if (!this.is_under_4()) {
+        flag = false;
+        this.$store.commit("addMessage", {
+          text: `税率が桁数オーバーです`,
+          risk: 3,
+        });
+      }
       if (flag) {
         try {
           for (let i = 0; i < this.targets.length; i++) {
@@ -365,6 +372,13 @@ export default ({
     is_long(content) {
       let ok = true;
       if (content.length==1) ok = false;
+      return ok;
+    },
+    is_under_4() {
+      let ok = true;
+      if (String(this.price).length > 4) {
+        ok = false;
+      }
       return ok;
     }
   }

@@ -23,7 +23,7 @@
             border="bottom"
 						colored-border
 						color="blue accent-5"
-						elevation="2">現在の課税対象一覧
+						elevation="2">現在の税金一覧
           </v-alert>
         </div>
         <div class="main mb-10 mt-10">

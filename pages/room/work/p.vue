@@ -255,19 +255,10 @@
                   dense
                   color=""
                   outlined
-                  type="text"
+                  type="tel"
                   hide-details=""
                   class="input_case"
                 ></v-text-field>
-                <v-slider
-                  v-model="price"
-                  color="orange"
-                  label="price"
-                  min="0"
-                  max="500"
-                  ticks="always"
-                  thumb-label
-                ></v-slider>
                 <v-btn
                   class="black--text mt-5"
                   block
@@ -405,7 +396,14 @@ export default ({
       else if (!this.is_long(this.content)) {
         flag = false;
         this.$store.commit("addMessage", {
-          texat: `内容の説明が短いです`,
+          text: `内容の説明が短いです`,
+          risk: 3,
+        });
+      }
+      else if (!func.isNumber(this.price)) {
+        flag = false;
+        this.$store.commit("addMessage", {
+          text: `金額は半角数字で入力してください`,
           risk: 3,
         });
       }

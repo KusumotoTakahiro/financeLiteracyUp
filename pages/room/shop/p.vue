@@ -133,7 +133,8 @@
                         counter
                         autofocus
                         type="Number"
-                        class="input_case2 text-center"
+                        class="text-center"
+                        style="font-family: serif;"
                       ></v-text-field>
                     </template>
                   </v-edit-dialog>
@@ -256,19 +257,10 @@
                   dense
                   color=""
                   outlined
-                  type="text"
+                  type="tel"
                   hide-details=""
                   class="input_case"
                 ></v-text-field>
-                <v-slider
-                  v-model="price"
-                  color="orange"
-                  label="price"
-                  min="0"
-                  max="500"
-                  ticks="always"
-                  thumb-label
-                ></v-slider>
                 <v-btn
                   class="black--text mt-5"
                   block

@@ -125,20 +125,10 @@
                   dense
                   color=""
                   outlined
-                  type="text"
+                  type="tel"
                   hide-details=""
                   class="input_case"
                 ></v-text-field>
-                <v-slider
-                  v-model="price"
-                  color="orange"
-                  label="price"
-                  min="0"
-                  max="500"
-                  ticks="always"
-                  thumb-label
-                  class="pb-0"
-                ></v-slider>
                 <v-btn
                   class="black--text mt-5"
                   block

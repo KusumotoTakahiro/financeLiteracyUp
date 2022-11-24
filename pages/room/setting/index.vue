@@ -74,17 +74,16 @@
             >
               <div>{{ props.item.data.balance }}</div>
               <template v-slot:input>
-                <div class="mt-4 text-body-1 text-center">
+                <div class="text-center">
                   残高を変更
                 </div>
                 <v-text-field
                   v-model="props.item.data.balance"
                   label="Edit"
                   single-line
-                  counter
                   autofocus
-                  type="Number"
-                  class="input_case2 text-center"
+                  type="tel"
+                  class="input_case2"
                 ></v-text-field>
               </template>
             </v-edit-dialog>
@@ -314,6 +313,5 @@ export default ({
 
 .input_case2 {
   font-family:  serif;
-  font-size: 30px;
 }
 </style>

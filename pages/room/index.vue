@@ -47,9 +47,7 @@
           </v-hover>
           </template>
           </v-card>
-          <v-row justify="center">
-            <v-btn @click="logout()">ログアウト</v-btn>
-          </v-row>
+          
         </div>
         <div v-else-if="attribute=='child'">
           <v-card>
@@ -101,9 +99,7 @@
             </v-hover>
           </template>
           </v-card>
-          <v-row justify="center">
-            <v-btn @click="logout()">ログアウト</v-btn>
-          </v-row>
+          
         </div>
         <div v-else>
           ログインセッションが切れています
@@ -199,12 +195,20 @@ export default {
           id: 8
         },
         {
+          icon: "mdi-account-cog",
+          title: "マイページ",
+          to: `room/mypage`,
+          color: "",
+          id: 9
+        },
+        {
           icon: "mdi-cog-outline",
           title: "ルーム設定",
           to: `room/setting`,
           color: "blue-grey darken-1",
-          id: 9
-        }
+          id: 10
+        },
+        
       ],
       childItems: [
         {
@@ -249,6 +253,13 @@ export default {
           color: "teal lighten-2",
           id: 6,
         },
+        {
+          icon: "mdi-account-cog",
+          title: "マイページ",
+          to: `room/mypage`,
+          color: "",
+          id: 7,
+        }
       ]
     }
   },

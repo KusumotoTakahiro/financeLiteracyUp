@@ -36,7 +36,7 @@
 						fixed-header
 						hide-default-header
 						hide-default-footer
-						:height="$vuetify.breakpoint.height-200"
+						:height="$vuetify.breakpoint.height-150"
 					>
 						<template #[`item.approve`]="{ item }">
 							<v-radio-group

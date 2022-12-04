@@ -109,4 +109,7 @@ export default {
   // Build Configuration: https://go.nuxtjs.dev/config-build
   build: {},
 
+  //default はserverらしい．
+  //静的ファイルを生成して，ホスティングサービスに投げるのであればstaticにしたほうがいいとのこと
+  target: 'static',
 }

@@ -38,7 +38,7 @@
 						elevation-0
 					"
           fixed-header
-          :height="$vuetify.breakpoint.height-200"
+          :height="$vuetify.breakpoint.height-170"
         ></v-data-table>
 				<v-row
           class="mt-3 mb-3 mx-auto"

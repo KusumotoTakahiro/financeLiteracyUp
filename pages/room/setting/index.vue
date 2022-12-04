@@ -1,6 +1,6 @@
 <template>
   <v-row align-content="center" justify="center" class="bg-yellow">
-    <v-col cols="12" sm="12" md="12" lg="12" xl="12">
+    <v-col cols="12" sm="12" md="12" lg="12" xl="12" >
       <v-card
         class="
 					d-flex
@@ -63,6 +63,7 @@
             item-key="uid"
             class="elevation-1"
             fixed-header
+            :height="$vuetify.breakpoint.height-450"
           >
           <template v-slot:item.data.balance="props">
             <v-edit-dialog

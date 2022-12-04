@@ -151,12 +151,18 @@
               </div>
             </template>
           </v-card-text>
-          <v-card-actions class="justify-end">
+          <v-row justify="space-between">
+            <v-btn
+              style="font-size: 0.5rem"
+              text
+              disabled
+            >encoding: {{encoding}} to Unicode</v-btn>
             <v-btn
               text
               @click="c_dialog_2 = false"
+              class="mr-3"
             >Close</v-btn>
-          </v-card-actions>
+          </v-row>
         </v-card>
       </v-dialog>
       <v-dialog
@@ -302,6 +308,7 @@ import {
   authStateChanged,
   saveHistory,
 } from '@/plugins/auth'
+import Encoding from  'encoding-japanese';
 
 export default ({
   name: 'shopParentPage',
@@ -334,7 +341,8 @@ export default ({
           value: 'price'
         }
       ],
-      shops: []
+      shops: [],
+      encoding: null,
     }
   },
   async mounted() {
@@ -535,14 +543,14 @@ export default ({
       let vm = this;
       const data = vm.new_csv;
       const length = data.length;
-      console.log(data);
-      console.log(length);
+      //本来は誤操作防止のため，dialogはあとで閉じたほうがいいが，
+      this.c_dialog_2 = false;
+      this.dialog_2 = false;
+      //DBへの登録が先だとブラウザ側で少しタイムラグになるので，先にdialogを閉じる.
       for (let i = 0; i < length; i++) {
         await this.create_item_for_csv(data[i].content, data[i].price);
       }
       this.fetch_shops();
-      this.c_dialog_2 = false;
-      this.dialog_2 = false;
     },
     //create_items_from_csv内で実行される関数
     async create_item_for_csv(content, price) { 
@@ -581,9 +589,21 @@ export default ({
       return new Promise((resolve, reject) => {
         console.log('get_csv_data');
         const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target.result.split('\r\n'));
+        reader.onload = (e) => {
+          //uint8arrayにより数値配列に変換できる．＝＞detect()で扱える形になるから嬉しいってこと．
+          let codes = new Uint8Array(e.target.result);
+          let encoding = Encoding.detect(codes);
+          let unicodeString = Encoding.convert(codes, {
+            to: 'unicode',
+            from: encoding,
+            type: 'string'
+          })
+          this.encoding = encoding;
+          resolve(unicodeString.split(/\r\n|\n/)) 
+        };
         reader.onerror = () => reject(error);
-        reader.readAsText(file);
+        reader.readAsArrayBuffer(file); //これはfileの中身をbinaryのまま扱えるようにする関数
+        //reader.readAsText(file); //これはfileの中身をstring型で扱えるようにする関数
       })
     },
     //fileReaderの読み込んだファイルを扱えるデータとして読み込む処理.
@@ -591,9 +611,11 @@ export default ({
       console.log('process_csv_data');
       let vm = this;
       let result = res;
-      let header = result[0].split(',')
-      result.shift();
-      result.pop();
+      //let header = result[0].split(',')
+      //理由はわからないが，上記だと文字が表示されない
+      let header = ['content', 'price']; 
+      result.shift(); //headerの部分を削除
+      result.pop(); //最後に不要な空白が残っているのでその部分を削除
       vm.csv_data = result.map(item=>{
         let datas = item.split(',');
         let temp = {};

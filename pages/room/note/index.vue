@@ -286,8 +286,9 @@ export default ({
 			for (let i = 0; i < this.notes.length; i++) {
 				let note = this.notes[i];
 				let who = note.data.reporter;
-				await this.caluculate_price(note.approve, note.type, note.data.did)
+				await this.caluculate_price(note.approve, note.type, note.data.did, note.data.content)
 				.then((val) => {
+					console.log(val)
 					obj[who] += Number(val);
 					console.log(obj[who]);
 				})
@@ -366,7 +367,9 @@ export default ({
 				resolve();
 			})
 		},
-		async caluculate_price(approve, type, did) {
+		async caluculate_price(approve, type, did, content) {
+			console.log('caluculate_price');
+			console.log(type)
 			let vm = this;
 			let ref = null; //db参照先
 			let data = null; //db内のdocument
@@ -392,7 +395,22 @@ export default ({
 					break;
 			}
 			data = await getDoc(ref);
-			original_price = data.data().price;
+			original_price = 0;
+			if (data.exists()) {
+				//削除されておらず，存在した場合は，そのまま，
+				original_price = data.data().price;
+				console.log(data.data())
+			}
+			else {
+				//削除されているので，どうすることもできない．
+				//申し訳ないが，取り合えず報告だけしておく．
+				this.$store.commit("addMessage", {
+          text: `${content}は，既に削除された項目のため，金額が参照できませんでした．`,
+          risk: 3,
+        });
+				original_price = 0;
+			}
+			console.log(original_price);
 			let tax = 0;
 			let taxs = [];
 			switch (type) { //ここで元の値段に税金がかかる．今は未実装.

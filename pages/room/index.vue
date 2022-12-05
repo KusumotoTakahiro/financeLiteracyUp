@@ -3,7 +3,9 @@
     <v-col cols="12" xs="12" sm="12" md="12" lg="12" xl="12" align="center">
         <div v-if="attribute=='parent'">
           <v-card>
-            <v-alert class="justify-center text-center text-h4"> {{this.roomName}} </v-alert>
+            <v-alert class="justify-center text-center text-h4">
+              {{this.roomName}} 
+            </v-alert>
           </v-card>
           <v-card
             class="
@@ -137,6 +139,7 @@ export default {
       balance: 0,
       roomPath: null,
       roomName: null,
+      myroomName: null,
       parentItems: [
         {
           icon: "mdi-hexagon-slice-3",
@@ -247,18 +250,25 @@ export default {
           id: 5,
         },
         {
+          icon: "mdi-cash-plus",
+          title: "貸す・借りる",
+          to: `/room/loan`,
+          color: "pink lighten-1",
+          id: 6,
+        },
+        {
           icon: "mdi-clipboard-text-clock",
           title: "履歴",
           to: `/room/history/c`,
           color: "teal lighten-2",
-          id: 6,
+          id: 7,
         },
         {
           icon: "mdi-account-cog",
           title: "マイページ",
           to: `room/mypage`,
           color: "",
-          id: 7,
+          id: 8,
         }
       ]
     }
@@ -297,6 +307,12 @@ export default {
         this.attribute = querySnapshot.data().attribute;
         this.balance = querySnapshot.data().balance;
         this.roomPath = querySnapshot.data().group;
+        try {
+          this.myroomName = querySnapshot.data().myroomName;
+        }
+        catch(error) {
+          console.log(error);
+        }
         console.log(this.roomPath);
         if (!this.roomPath) {
           this.$store.commit("addMessage", {
@@ -308,7 +324,9 @@ export default {
         const groupRef = doc(fireStore, "groups", this.roomPath);
         const groupItems = await getDoc(groupRef);
         this.roomName = groupItems.data().name;
-        console.log(this.roomName);
+        if (this.myroomName!==null) {
+          this.roomName = this.myroomName;
+        }
         this.userName = user.displayName;
       }
       catch(error) {

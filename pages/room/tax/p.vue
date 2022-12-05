@@ -289,6 +289,13 @@ export default ({
           risk: 3,
         });
       }
+      else if (!func.isNumber(this.price)) {
+        flag = false;
+        this.$store.commit("addMessage", {
+          text: `金額は半角数字で入力してください`,
+          risk: 3,
+        });
+      }
       else if (!this.is_under_4()) {
         flag = false;
         this.$store.commit("addMessage", {

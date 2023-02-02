@@ -43,27 +43,24 @@
             align-content="center"
             justify="space-around"
           >
-            <v-btn class="mx-1 mb-1" width="7rem" @click="dialog_2=true">
-              一括追加
-            </v-btn>
-            <v-btn class="mx-1 mb-1" width="7rem" @click="dialog_3=true">
-              一括修正
+            <v-btn class="mx-1 mb-1" width="7rem" @click="change_data_file">
+              ファイル編集
             </v-btn>
             <v-btn class="mx-1 mb-1" width="7rem" @click="dialog=true">
-              追加
+              項目追加
             </v-btn>
             <v-btn class="mx-1 mb-1" width="7rem" @click="delete_items()">
-              削除
+              項目削除
             </v-btn>
             <v-btn class="mx-1 mb-1" width="7rem" @click="goToHome()">
-              Homeに戻る
+              Home
             </v-btn>
           </v-row>
         </div>
       </v-card>
-      <!-- 一括追加の確認ダイアログ -->
+      <!-- ファイル編集の確認ダイアログ -->
       <v-dialog
-        v-model="c_dialog_2"
+        v-model="c_dialog_file"
         outlined
         hide-overlay
         :height="$vuetify.breakpoint.height"
@@ -163,16 +160,16 @@
             >encoding: {{encoding}} to Unicode</v-btn>
             <v-btn
               text
-              @click="c_dialog_2 = false"
+              @click="c_dialog_file = false"
               class="mr-3"
             >Close</v-btn>
           </v-row>
           </v-card-actions>
         </v-card>
       </v-dialog>
-      <!-- 一括追加のダイアログ -->
+      <!-- ファイル編集のダイアログ -->
       <v-dialog
-        v-model="dialog_2"
+        v-model="dialog_file"
         outlined
         hide-overlay
         :height="$vuetify.breakpoint.height"
@@ -188,7 +185,8 @@
         >
           <v-card-title class="justify-center">CSVから一括追加</v-card-title>
           <v-card-text>
-            <template>
+            <div id="mytable"></div>
+            <!-- <template>
               <div>
                 <v-file-input
                   id="file"
@@ -219,181 +217,13 @@
                   @click="download_format()"
                 >フォーマットのダウンロード</v-btn>
               </div>
-            </template>
+            </template> -->
           </v-card-text>
           <v-card-actions class="justify-end">
             <v-btn
               text
-              @click="dialog_2 = false"
+              @click="dialog_file = false"
             >Close</v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
-      <!-- 一括修正のダイアログ -->
-      <v-dialog
-        v-model="dialog_3"
-        outlined
-        hide-overlay
-        :height="$vuetify.breakpoint.height"
-        max-width="600"
-        content-class="rounded-lg elevation-2"
-        transition="dialog-bottom-transition"
-      >
-        <v-card 
-          class="py-5"
-          elevation="7"
-          outlined
-          shaped
-        >
-          <v-card-title class="justify-center">CSVから一括修正</v-card-title>
-          <v-card-text>
-            <template>
-              <div>
-                <v-file-input
-                  id="file"
-                  ref="file"
-                  show-size
-                  accept=".csv"
-                  @change="onFileChange2"
-                  @click:clear="csv_data2=null"
-                  label="csvファイルを入力してください"
-                ></v-file-input>
-              </div>
-              <div>  
-                <v-btn
-                  :disabled="disabled2"
-                  class="black--text mt-5"
-                  block
-                  height="40"
-                  color=""
-                  @click="check_csv2()"
-                >OK</v-btn>
-              </div>
-              <div>  
-                <v-btn
-                  class="black--text mt-5"
-                  block
-                  height="40"
-                  color=""
-                  @click="download_now()"
-                >ダウンロード</v-btn>
-              </div>
-            </template>
-          </v-card-text>
-          <v-card-actions class="justify-end">
-            <v-btn
-              text
-              @click="dialog_3 = false"
-            >Close</v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
-      <!-- 一括修正用 -->
-      <v-dialog
-        v-model="c_dialog_3"
-        outlined
-        hide-overlay
-        :height="$vuetify.breakpoint.height"
-        max-width="600"
-        content-class="rounded-lg elevation-2"
-        transition="dialog-bottom-transition"
-      >
-        <v-card 
-          class="py-5"
-          elevation="7"
-          outlined
-          shaped
-        >
-          <v-card-title class="justify-center">確認・修正</v-card-title>
-          <v-card-text>
-            <template>
-              <v-data-table
-                :headers="headers"
-                :items="new_csv2"
-                item-key="id"
-                class="elevation-0"
-                fixed-header
-                hide-default-header
-              >
-                <template v-slot:item.content="props">
-                  <v-edit-dialog
-                    :return-value.sync="props.item.content"
-                    persistent
-                    style="height:auto"
-                    large
-                    @save="save"
-                    @cancel="cancel"
-                    @open="open"
-                    @close="close"
-                  >
-                    <div>{{ props.item.content }}</div>
-                    <template v-slot:input>
-                      <div class="mt-4 text-body-1 text-center">
-                        内容を変更
-                      </div>
-                      <v-text-field
-                        v-model="props.item.content"
-                        label="Edit"
-                        single-line
-                        autofocus
-                        class="input_case2 text-center"
-                      ></v-text-field>
-                    </template>
-                  </v-edit-dialog>
-                </template>
-                <template v-slot:item.price="props">
-                  <v-edit-dialog
-                    :return-value.sync="props.item.price"
-                    persistent
-                    style="height:auto"
-                    large
-                    @save="save"
-                    @cancel="cancel"
-                    @open="open"
-                    @close="close"
-                  >
-                    <div>{{ props.item.price }}</div>
-                    <template v-slot:input>
-                      <div class="mt-4 text-body-1 text-center">
-                        報酬を変更
-                      </div>
-                      <v-text-field
-                        v-model="props.item.price"
-                        label="Edit"
-                        single-line
-                        counter
-                        autofocus
-                        type="Number"
-                        class="input_case2 text-center"
-                      ></v-text-field>
-                    </template>
-                  </v-edit-dialog>
-                </template>
-              </v-data-table>
-              <div>  
-                <v-btn
-                  class="black--text mt-0"
-                  block
-                  height="40"
-                  color=""
-                  @click="update_items_from_csv()"
-                >登録</v-btn>
-              </div>
-            </template>
-          </v-card-text>
-          <v-card-actions >
-          <v-row justify="space-between">
-            <v-btn
-              style="font-size: 0.5rem"
-              text
-              disabled
-            >encoding: {{encoding}} to Unicode</v-btn>
-            <v-btn
-              text
-              @click="c_dialog_3 = false"
-              class="mr-3"
-            >Close</v-btn>
-          </v-row>
           </v-card-actions>
         </v-card>
       </v-dialog>
@@ -491,9 +321,9 @@ export default ({
   data() {
     return {
       dialog: false,
-      dialog_2: false, //一括追加用
+      dialog_file: false, //一括追加用
       dialog_3: false, //一括修正用
-      c_dialog_2: false, //一括追加用
+      c_dialog_file: false, //一括追加用
       c_dialog_3: false, //一括修正用
       main_dialog: true,
       csv_data: null, //一括追加用
@@ -571,6 +401,20 @@ export default ({
     }
 	},
   methods: {
+    change_data_file() {
+      this.dialog_file = true;
+      const myTable = jspreadsheet(document.getElementById('mytable'), {
+        data: [
+          ['2022/10/24', '文房具', 420],
+          ['2022/10/26', '外食費', 1300]
+        ],
+        columns: [
+          { type: 'calendar', title: '日付', width: 120, options: { format: 'YYYY/MM/DD' } },
+          { type: 'text', title: '項目', width: 300 },
+          { type: 'numeric', title: '出金', width: 200, mask:'#,##' },
+        ]
+      });
+    },
     goToHome() {
       this.$router.push('/room')
     },
@@ -729,7 +573,7 @@ export default ({
       console.log('check_csv');
       const vm = this;
       vm.new_csv = []; //前のデータを空にする
-      this.c_dialog_2 = true;
+      this.c_dialog_file = true;
       //登録の際の記入ミスがないかをチェック
       vm.csv_data.forEach((data, index) => {
         if (!this.is_written(data.content, data.price)) {
@@ -809,8 +653,8 @@ export default ({
       console.log(data);
       console.log(length);
       //本来は誤操作防止のため，dialogはあとで閉じたほうがいいが，
-      this.c_dialog_2 = false;
-      this.dialog_2 = false;
+      this.c_dialog_file = false;
+      this.dialog_file = false;
       //DBへの登録が先だとブラウザ側で少しタイムラグになるので，先にdialogを閉じる.
       for (let i = 0; i < length; i++) {
         await this.create_item_for_csv(data[i].content, data[i].price);

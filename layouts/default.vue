@@ -17,6 +17,24 @@ export default {
   },
   components: { MyAlert, MyTitle },
   name: 'DefaultLayout',
+  head() {
+    return {
+      link: [
+        {
+          rel: "stylesheet",
+          href: "https://bossanova.uk/jspreadsheet/v4/jexcel.css",
+        },
+        {
+          rel: "stylesheet",
+          href: "https://jsuites.net/v4/jsuites.css"
+        }
+      ],
+      script: [
+        { src: "https://bossanova.uk/jspreadsheet/v4/jexcel.js" },
+        { src: "https://jsuites.net/v4/jsuites.js" }
+      ]
+    }
+  },
   data() {
     return {
       

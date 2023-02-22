@@ -44,7 +44,7 @@
             justify="space-around"
           >
             <v-btn class="mx-1 mb-1" width="7rem" @click="change_data_file">
-              ファイル編集
+              一括編集
             </v-btn>
             <v-btn class="mx-1 mb-1" width="7rem" @click="dialog=true">
               項目追加
@@ -58,8 +58,9 @@
           </v-row>
         </div>
       </v-card>
-      <!-- ファイル編集の確認ダイアログ -->
-      <v-dialog
+      <!-- 一括編集 -->
+      <!-- 一括編集の確認ダイアログ -->
+      <!-- <v-dialog
         v-model="c_dialog_file"
         outlined
         hide-overlay
@@ -154,11 +155,6 @@
           <v-card-actions >
           <v-row justify="space-between">
             <v-btn
-              style="font-size: 0.5rem"
-              text
-              disabled
-            >encoding: {{encoding}} to Unicode</v-btn>
-            <v-btn
               text
               @click="c_dialog_file = false"
               class="mr-3"
@@ -166,15 +162,12 @@
           </v-row>
           </v-card-actions>
         </v-card>
-      </v-dialog>
-      <!-- ファイル編集のダイアログ -->
+      </v-dialog> -->
+      <!-- 一括編集のダイアログ -->
       <v-dialog
         v-model="dialog_file"
-        outlined
-        hide-overlay
-        :height="$vuetify.breakpoint.height"
-        max-width="600"
-        content-class="rounded-lg elevation-2"
+        persistent
+        width="auto"
         transition="dialog-bottom-transition"
       >
         <v-card 
@@ -183,48 +176,15 @@
           outlined
           shaped
         >
-          <v-card-title class="justify-center">CSVから一括追加</v-card-title>
-          <v-card-text>
+          <v-card-title class="justify-center">一括編集</v-card-title>
+          <v-card-text 
+            class="
+            d-flex
+            justify-center
+            mx-auto
+          ">
             <div id="mytable"></div>
-            <!-- <template>
-              <div>
-                <v-file-input
-                  id="file"
-                  ref="file"
-                  show-size
-                  accept=".csv"
-                  @change="onFileChange"
-                  @click:clear="csv_data=null"
-                  label="csvファイルを入力してください"
-                ></v-file-input>
-              </div>
-              <div>  
-                <v-btn
-                  :disabled="disabled"
-                  class="black--text mt-5"
-                  block
-                  height="40"
-                  color=""
-                  @click="check_csv()"
-                >CSVから登録</v-btn>
-              </div>
-              <div>  
-                <v-btn
-                  class="black--text mt-5"
-                  block
-                  height="40"
-                  color=""
-                  @click="download_format()"
-                >フォーマットのダウンロード</v-btn>
-              </div>
-            </template> -->
           </v-card-text>
-          <v-card-actions class="justify-end">
-            <v-btn
-              text
-              @click="dialog_file = false"
-            >Close</v-btn>
-          </v-card-actions>
         </v-card>
       </v-dialog>
       <!-- 個別追加 -->
@@ -252,10 +212,8 @@
                   clearable
                   placeholder="お手伝いの内容を記入してください"
                   dense
-                  color=""
                   outlined
                   type="text"
-                  hide-details=""
                   class="input_case"
                 ></v-text-field>
               </div>
@@ -265,10 +223,8 @@
                   v-model="price"
                   clearable
                   dense
-                  color=""
                   outlined
                   type="tel"
-                  hide-details=""
                   class="input_case"
                 ></v-text-field>
                 <v-btn
@@ -318,18 +274,20 @@ export default ({
   name: 'workParentPage',
   layout: "default",
 
+  head: {
+    link: [
+      {rel: "stylesheet", href: "https://fonts.googleapis.com/css?family=Material+Icons"}
+    ]
+  },
+
   data() {
     return {
       dialog: false,
       dialog_file: false, //一括追加用
-      dialog_3: false, //一括修正用
       c_dialog_file: false, //一括追加用
-      c_dialog_3: false, //一括修正用
       main_dialog: true,
       csv_data: null, //一括追加用
-      csv_data2: null, //一括修正用
       new_csv:[], //一括追加用
-      new_csv2: [], //一括修正用
       content: "",
       price: null,
       isLogin: false,
@@ -349,8 +307,21 @@ export default ({
           value: 'price'
         }
       ],
-      works: [],
-      encoding: null,
+      columns: [
+        { 
+          type: 'text',
+          title: 'お手伝い',
+          width: 200
+        },
+        { 
+          type: 'numeric',
+          title: '報酬',
+          width: 150,
+          mask:'#,##' //maskは形式の指定 #,##で書式を指定している
+        }, 
+      ],
+      works: [], // DBから取得した全データを格納
+      myTable: null,
     }
   },
   async mounted() {
@@ -401,46 +372,106 @@ export default ({
     }
 	},
   methods: {
-    change_data_file() {
-      this.dialog_file = true;
-      const myTable = jspreadsheet(document.getElementById('mytable'), {
-        data: [
-          ['2022/10/24', '文房具', 420],
-          ['2022/10/26', '外食費', 1300]
-        ],
-        columns: [
-          { type: 'calendar', title: '日付', width: 120, options: { format: 'YYYY/MM/DD' } },
-          { type: 'text', title: '項目', width: 300 },
-          { type: 'numeric', title: '出金', width: 200, mask:'#,##' },
-        ]
-      });
-    },
+    // ホームボタンを押したときの関数
     goToHome() {
       this.$router.push('/room')
     },
-    async create_item() { //tableに登録するアイテムの作成 作成は一つずつ
-      let flag = true;
-      if (!this.is_written(this.content, this.price)) {
-        flag = false;
-        this.$store.commit("addMessage", {
-          text: `記入漏れがあります`,
-          risk: 3,
+
+    change_data_file() {
+      this.dialog_file = true;
+      //処理が前後するとid=mytableの要素がとれないエラーが発生するため，
+      //以下のようにsetTimeOutで時間差を作っている．
+      setTimeout(() => {
+        //子要素の全消し
+        let parent = document.getElementById('mytable')
+        if ('cloneNode' in parent) {
+          const cloneParent = parent.cloneNode(false) //外側だけ複製
+          parent.parentNode.replaceChild(cloneParent, parent)
+        }
+        //worksからdataを形成
+        const data = []
+        this.works.forEach(work => {
+          data.push([work.content, work.price])
+        })
+        //jspreadsheetに転記
+        const myTable = jspreadsheet(document.getElementById('mytable'), {
+          data: data,
+          columns: this.columns,
+          toolbar: [
+            {
+              type: 'i',
+              content: 'undo',
+              onclick: function() {myTable.undo()}
+            },
+            {
+              type: 'i',
+              content: 'redo',
+              onclick: function() {myTable.redo()}
+            },
+            {
+              type: 'i',
+              content: 'save',
+              onclick: ()=>{this.save_data()}
+            },
+            {
+              type: 'i',
+              content: 'close',
+              onclick: ()=>{this.dialog_file=false}
+            },
+          ],
         });
+        this.myTable = myTable;
+      }, 500)
+    },
+
+    //jspreadsheetでの変更時に起動する関数
+    async save_data() {
+      const myTableData = this.myTable.getData();
+      const length = myTableData.length;
+      const works = this.works;
+      let content_exist = false;
+      for (let i = 0; i < length; i++) {
+        for (let j = 0; j < works.length; j++) {
+          if (works[j].content === myTableData[i][0]) {
+            content_exist = true;
+            if (works[j].price !== myTableData[i][1]) {
+              console.log(myTableData[i][0], 'のpriceを変更する')
+            }
+          }
+        }
       }
-      else if (!this.is_long(this.content)) {
-        flag = false;
-        this.$store.commit("addMessage", {
-          text: `内容の説明が短いです`,
-          risk: 3,
-        });
+      for (let i = 0; i < works.length; i++) {
+        let work_exist = false
+        for (let j = 0; j < length; j++) {
+          if (works[i].content === myTableData[j][0]) {
+            work_exist = true
+          }
+        }
+        if (!work_exist) {
+          console.log(works[i].content, 'を削除する')
+        }
       }
-      else if (!func.isNumber(this.price)) {
-        flag = false;
-        this.$store.commit("addMessage", {
-          text: `金額は半角数字で入力してください`,
-          risk: 3,
-        });
-      }
+      // try {
+      //   await addDoc(this.workCollRef, {
+      //     content: String(content),
+      //     price: Number(price),        
+      //   })
+      //   await saveHistory(this.roomPath, this.user.uid, 
+      //     `${this.user.displayName}が${content}を『お手伝い』に追加しました`
+      //   )
+      // }
+      // catch(error) {
+      //   console.log('create_item error');
+      //   console.log(error);
+      // }
+      // this.fetch_works();
+      // //本来は誤操作防止のため，dialogはあとで閉じたほうがいいはず
+      // this.dialog_file = false;
+    },
+
+    //tableに登録するアイテムの作成 作成は一つずつ
+    async create_item() { 
+      let flag = this.data_check(this.content, this.price)
       if (flag) {
         try {
           await addDoc(this.workCollRef, {
@@ -461,7 +492,9 @@ export default ({
         this.fetch_works();
       }
     },
-    async delete_items(){ //既にtableに登録されているアイテムのうち選択したものを削除
+  
+    //既にtableに登録されているアイテムのうち選択したものを削除
+    async delete_items(){ 
       let obj = this.selected;
       for(let key in obj ) {
         if( obj.hasOwnProperty(key) ) {
@@ -479,6 +512,7 @@ export default ({
       }
       await this.fetch_works();
     },
+    // DBからworksを再取得するための関数(主に，データ更新時に利用する)
     async fetch_works() {
       console.log('fetch_works')
       const works_all = await getDocs(this.workCollRef);
@@ -496,6 +530,33 @@ export default ({
         
       })
     },
+    //DBの登録前にcontent(内容)とprice(報酬)の入力内容を簡易的にチェックする関数
+    data_check(content, price) {
+      let flag = true;
+      if (!this.is_written(content, price)) {
+        flag = false;
+        this.$store.commit("addMessage", {
+          text: `記入漏れがあります`,
+          risk: 3,
+        });
+      }
+      else if (!this.is_long(content)) {
+        flag = false;
+        this.$store.commit("addMessage", {
+          text: `内容の説明が短いです`,
+          risk: 3,
+        });
+      }
+      else if (!func.isNumber(price)) {
+        flag = false;
+        this.$store.commit("addMessage", {
+          text: `金額は半角数字で入力してください`,
+          risk: 3,
+        });
+      }
+      return flag
+    },
+    // DBの登録前にcontetnとpriceの入力内容をチェックする関数(data_check内で利用する)
     is_written(content, price) {
       let ok = true;
       if (!content) {
@@ -511,298 +572,283 @@ export default ({
       if (content.length==1) ok = false;
       return ok;
     },
-    download_format() {
-      console.log('format_download');
-      //文字列型の二次元配列データ
-      const data = [
-        ["content", "price"],
-        ["皿洗い（例）", "80"],
-        ["掃除（例）", "100"]
-      ]
-      //作った二次元配列をCSV文字列に直す．
-      let csv_string = "";
-      for (let d of data) {
-        csv_string += d.join(",");
-        csv_string += '\r\n';
-      }
-      //ファイル名
-      const file_name = "format.csv";
-      //BOMを作る これをしないと文字化けした
-      var bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
-      //CSVのバイナリデータを作る
-      const blob = new Blob([bom, csv_string], {type: "text/csv"});
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.download = file_name;
-      link.href = url;
-      link.click(); //リンクをクリックしたことにする．
-      URL.revokeObjectURL(link.href); //リンクに当てられたメモリを開放する
-    },
-
-    download_now() {
-      console.log('download_now');
-      //文字列型の二次元配列データ
-      const data = [["content", "price", "id"]]
-      //dataを今のテーブルをもとに生成する.
-      for (let i = 0; i < this.works.length; i++) {
-        let work = this.works[i];
-        data.push([work.content, work.price, work.id]);
-      }
-      //作った二次元配列をCSV文字列に直す．
-      let csv_string = "";
-      for (let d of data) {
-        csv_string += d.join(",");
-        csv_string += '\r\n';
-      }
-      //ファイル名
-      const file_name = "works.csv";
-      //BOMを作る これをしないと文字化けした
-      var bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
-      //CSVのバイナリデータを作る
-      const blob = new Blob([bom, csv_string], {type: "text/csv"});
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.download = file_name;
-      link.href = url;
-      link.click(); //リンクをクリックしたことにする．
-      URL.revokeObjectURL(link.href); //リンクに当てられたメモリを開放する
-    },
-
+    // 今回は使わなくなったファイル処理ですが，結構調べるのには，苦労したので，一旦コメントアウトで残しておきます．
+    // あとで，Notionに移しておこうと思います．
+    // download_format() {
+    //   console.log('format_download');
+    //   //文字列型の二次元配列データ
+    //   const data = [
+    //     ["content", "price"],
+    //     ["皿洗い（例）", "80"],
+    //     ["掃除（例）", "100"]
+    //   ]
+    //   //作った二次元配列をCSV文字列に直す．
+    //   let csv_string = "";
+    //   for (let d of data) {
+    //     csv_string += d.join(",");
+    //     csv_string += '\r\n';
+    //   }
+    //   //ファイル名
+    //   const file_name = "format.csv";
+    //   //BOMを作る これをしないと文字化けした
+    //   var bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+    //   //CSVのバイナリデータを作る
+    //   const blob = new Blob([bom, csv_string], {type: "text/csv"});
+    //   const url = URL.createObjectURL(blob);
+    //   const link = document.createElement("a");
+    //   link.download = file_name;
+    //   link.href = url;
+    //   link.click(); //リンクをクリックしたことにする．
+    //   URL.revokeObjectURL(link.href); //リンクに当てられたメモリを開放する
+    // },
+    // ファイル処理関連の関数　上記と同様です．
+    // download_now() {
+    //   console.log('download_now');
+    //   //文字列型の二次元配列データ
+    //   const data = [["content", "price", "id"]]
+    //   //dataを今のテーブルをもとに生成する.
+    //   for (let i = 0; i < this.works.length; i++) {
+    //     let work = this.works[i];
+    //     data.push([work.content, work.price, work.id]);
+    //   }
+    //   //作った二次元配列をCSV文字列に直す．
+    //   let csv_string = "";
+    //   for (let d of data) {
+    //     csv_string += d.join(",");
+    //     csv_string += '\r\n';
+    //   }
+    //   //ファイル名
+    //   const file_name = "works.csv";
+    //   //BOMを作る これをしないと文字化けした
+    //   var bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+    //   //CSVのバイナリデータを作る
+    //   const blob = new Blob([bom, csv_string], {type: "text/csv"});
+    //   const url = URL.createObjectURL(blob);
+    //   const link = document.createElement("a");
+    //   link.download = file_name;
+    //   link.href = url;
+    //   link.click(); //リンクをクリックしたことにする．
+    //   URL.revokeObjectURL(link.href); //リンクに当てられたメモリを開放する
+    // },
+    //ファイル処理の関数．上記と同様です．
     //現在のCSVデータに記入ミスがないかを確認表示する関数
-    check_csv() {
-      console.log('check_csv');
-      const vm = this;
-      vm.new_csv = []; //前のデータを空にする
-      this.c_dialog_file = true;
-      //登録の際の記入ミスがないかをチェック
-      vm.csv_data.forEach((data, index) => {
-        if (!this.is_written(data.content, data.price)) {
-          this.$store.commit("addMessage", {
-            text: `${index+1}行目に記入漏れがあります`,
-            risk: 3,
-          });
-        }
-        else if (!this.is_long(data.content)) {
-          this.$store.commit("addMessage", {
-            texat: `${index+1}行目の内容の説明が短いです`,
-            risk: 3,
-          });
-        }
-        data.id = index;
-        this.new_csv.push(data);
-      })
-    },
+    // check_csv() {
+    //   console.log('check_csv');
+    //   const vm = this;
+    //   vm.new_csv = []; //前のデータを空にする
+    //   this.c_dialog_file = true;
+    //   //登録の際の記入ミスがないかをチェック
+    //   vm.csv_data.forEach((data, index) => {
+    //     if (!this.is_written(data.content, data.price)) {
+    //       this.$store.commit("addMessage", {
+    //         text: `${index+1}行目に記入漏れがあります`,
+    //         risk: 3,
+    //       });
+    //     }
+    //     else if (!this.is_long(data.content)) {
+    //       this.$store.commit("addMessage", {
+    //         texat: `${index+1}行目の内容の説明が短いです`,
+    //         risk: 3,
+    //       });
+    //     }
+    //     data.id = index;
+    //     this.new_csv.push(data);
+    //   })
+    // },
 
     //一括修正用
-    check_csv2() {
-      console.log('check_csv2');
-      const vm = this;
-      vm.new_csv2 = []; //前のデータを空にする
-      vm.c_dialog_3 = true;
-      //ファイル形式のチェック
-      let msg = func.checkFile(vm.csv_data2, vm.works)
-      if (msg!=="") {
-        this.$store.commit("addMessage", {
-          text: msg,
-          risk: 3,
-        });
-        vm.c_dialog_3 = false;
-        return;
-      } 
+    // check_csv2() {
+    //   console.log('check_csv2');
+    //   const vm = this;
+    //   vm.new_csv2 = []; //前のデータを空にする
+    //   vm.c_dialog_3 = true;
+    //   //ファイル形式のチェック
+    //   let msg = func.checkFile(vm.csv_data2, vm.works)
+    //   if (msg!=="") {
+    //     this.$store.commit("addMessage", {
+    //       text: msg,
+    //       risk: 3,
+    //     });
+    //     vm.c_dialog_3 = false;
+    //     return;
+    //   } 
 
-      let flag = true;
-      //登録の際の記入ミスがないかをチェック
-      vm.csv_data2.forEach((data, index) => {
-        if (!vm.is_written(data.content, data.price)) {
-          vm.$store.commit("addMessage", {
-            text: `${index+1}行目に記入漏れがあります`,
-            risk: 3,
-          });
-          flag = false;
-        }
-        else if (!vm.is_long(data.content)) {
-          vm.$store.commit("addMessage", {
-            text: `${index+1}行目の内容の説明が短いです`,
-            risk: 3,
-          });
-          flag = false;
-        }
-        else if (!func.isNumber(data.price)) {
-          vm.$store.commit("addMessage", {
-            text: `金額が半角数字ではありません`,
-            risk: 3,
-          });
-          flag = false;
-        }
-        if (flag) {
-          data.id = index;
-          vm.new_csv2.push(data);
-        }
-        else {
-          vm.c_dialog_3 = false;
-        }
-      })
-    },
+    //   let flag = true;
+    //   //登録の際の記入ミスがないかをチェック
+    //   vm.csv_data2.forEach((data, index) => {
+    //     if (!vm.is_written(data.content, data.price)) {
+    //       vm.$store.commit("addMessage", {
+    //         text: `${index+1}行目に記入漏れがあります`,
+    //         risk: 3,
+    //       });
+    //       flag = false;
+    //     }
+    //     else if (!vm.is_long(data.content)) {
+    //       vm.$store.commit("addMessage", {
+    //         text: `${index+1}行目の内容の説明が短いです`,
+    //         risk: 3,
+    //       });
+    //       flag = false;
+    //     }
+    //     else if (!func.isNumber(data.price)) {
+    //       vm.$store.commit("addMessage", {
+    //         text: `金額が半角数字ではありません`,
+    //         risk: 3,
+    //       });
+    //       flag = false;
+    //     }
+    //     if (flag) {
+    //       data.id = index;
+    //       vm.new_csv2.push(data);
+    //     }
+    //     else {
+    //       vm.c_dialog_3 = false;
+    //     }
+    //   })
+    // },
 
-    //最終的に，「登録する」ボタンを押すと実行される
-    async create_items_from_csv() {
-      console.log('create_items_from_csv');
-      let vm = this;
-      const data = vm.new_csv;
-      const length = data.length;
-      console.log(data);
-      console.log(length);
-      //本来は誤操作防止のため，dialogはあとで閉じたほうがいいが，
-      this.c_dialog_file = false;
-      this.dialog_file = false;
-      //DBへの登録が先だとブラウザ側で少しタイムラグになるので，先にdialogを閉じる.
-      for (let i = 0; i < length; i++) {
-        await this.create_item_for_csv(data[i].content, data[i].price);
-      }
-      this.fetch_works();
-    },
     //create_items_from_csv内で実行される関数
-    async create_item_for_csv(content, price) { 
-      console.log('create_item_for_csv');
-      console.log(content, price);
-      try {
-        await addDoc(this.workCollRef, {
-          content: String(content),
-          price: Number(price),        
-        })
-        await saveHistory(this.roomPath, this.user.uid, 
-          `${this.user.displayName}が${content}を『お手伝い』に追加しました`
-        )
-      }
-      catch(error) {
-        console.log('create_item error');
-        console.log(error);
-      }
-      this.new_csv = []; //登録終わったので空にする
-    },
+    // async create_item_for_csv(content, price) { 
+    //   console.log('create_item_for_csv');
+    //   console.log(content, price);
+    //   try {
+    //     await addDoc(this.workCollRef, {
+    //       content: String(content),
+    //       price: Number(price),        
+    //     })
+    //     await saveHistory(this.roomPath, this.user.uid, 
+    //       `${this.user.displayName}が${content}を『お手伝い』に追加しました`
+    //     )
+    //   }
+    //   catch(error) {
+    //     console.log('create_item error');
+    //     console.log(error);
+    //   }
+    //   this.new_csv = []; //登録終わったので空にする
+    // },
 
     //最終的に，「修正する」ボタンを押すと実行される
-    async update_items_from_csv() {
-      console.log('update_items_from_csv');
-      let vm = this;
-      const data = vm.new_csv2;
-      const length = data.length;
-      //本来は誤操作防止のため，dialogはあとで閉じたほうがいいが，
-      this.c_dialog_3 = false;
-      this.dialog_3 = false;
-      //DBへの登録が先だとブラウザ側で少しタイムラグになるので，先にdialogを閉じる.
-      for (let i = 0; i < length; i++) {
-        await this.update_item_for_csv(data[i].content, data[i].price, data[i].did);
-      }
-      this.fetch_works();
-    },
+    // async update_items_from_csv() {
+    //   console.log('update_items_from_csv');
+    //   let vm = this;
+    //   const data = vm.new_csv2;
+    //   const length = data.length;
+    //   //本来は誤操作防止のため，dialogはあとで閉じたほうがいいが，
+    //   this.c_dialog_3 = false;
+    //   this.dialog_3 = false;
+    //   //DBへの登録が先だとブラウザ側で少しタイムラグになるので，先にdialogを閉じる.
+    //   for (let i = 0; i < length; i++) {
+    //     await this.update_item_for_csv(data[i].content, data[i].price, data[i].did);
+    //   }
+    //   this.fetch_works();
+    // },
     //update_items_from_csv内で実行される関数
-    async update_item_for_csv(content, price, did) { 
-      console.log('update_item_for_csv');
-      try {
-        const Ref = doc(fireStore, "groups", this.roomPath, "works", did);
-        await updateDoc(Ref, {
-          content: String(content),
-          price: Number(price),        
-        })
-        await saveHistory(this.roomPath, this.user.uid, 
-          `${this.user.displayName}が『お手伝い』の${content}を修正しました`
-        )
-      }
-      catch(error) {
-        console.log('update_item error');
-        console.log(error);
-      }
-      this.new_csv2 = []; //登録終わったので空にする
-    },
+    // async update_item_for_csv(content, price, did) { 
+    //   console.log('update_item_for_csv');
+    //   try {
+    //     const Ref = doc(fireStore, "groups", this.roomPath, "works", did);
+    //     await updateDoc(Ref, {
+    //       content: String(content),
+    //       price: Number(price),        
+    //     })
+    //     await saveHistory(this.roomPath, this.user.uid, 
+    //       `${this.user.displayName}が『お手伝い』の${content}を修正しました`
+    //     )
+    //   }
+    //   catch(error) {
+    //     console.log('update_item error');
+    //     console.log(error);
+    //   }
+    //   this.new_csv2 = []; //登録終わったので空にする
+    // },
 
     //fileがUploadされたときにcsv_dataを更新する(csv_dataを取り込む)
-    onFileChange(file) {
-      const vm = this;
-      if (file) {
-        if (file.name.indexOf('.csv') > -1) {
-          vm.get_csv_data(file)
-          .then(vm.process_csv_data)
-        }
-      }
-      else {
-        console.log('not in file');
-      }
-    },
-    //fileReaderにファイルが読み込まれた時の処理．
-    get_csv_data(file) {
-      return new Promise((resolve, reject) => {
-        console.log('get_csv_data');
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          //uint8arrayにより数値配列に変換できる．＝＞detect()で扱える形になるから嬉しいってこと．
-          let codes = new Uint8Array(e.target.result);
-          let encoding = Encoding.detect(codes);
-          let unicodeString = Encoding.convert(codes, {
-            to: 'unicode',
-            from: encoding,
-            type: 'string'
-          })
-          this.encoding = encoding;
-          resolve(unicodeString.split(/\r\n|\n/)) 
-        };
-        reader.onerror = () => reject(error);
-        reader.readAsArrayBuffer(file); //これはfileの中身をbinaryのまま扱えるようにする関数
-        //reader.readAsText(file); //これはfileの中身をstring型で扱えるようにする関数
-      })
-    },
-    //fileReaderの読み込んだファイルを扱えるデータとして読み込む処理.
-    process_csv_data(res) {
-      console.log('process_csv_data');
-      let vm = this;
-      let result = res;
-      //let header = result[0].split(',')
-      //理由はわからないが，上記だと文字が表示されない
-      let header = ['content', 'price']; 
-      result.shift(); //headerの部分を削除
-      result.pop(); //最後に不要な空白が残っているのでその部分を削除
-      vm.csv_data = result.map(item=>{
-        let datas = item.split(',');
-        let temp = {};
-        for (const index in datas) {
-          let key = header[index];
-          temp[key] = datas[index];
-        }
-        return temp;
-      })
-    },
-    //一括修正用
-    onFileChange2(file) {
-      const vm = this;
-      if (file) {
-        if (file.name.indexOf('.csv') > -1) {
-          vm.get_csv_data(file)
-          .then(vm.process_csv_data2)
-        }
-      }
-      else {
-        console.log('not in file');
-      }
-    },
-    process_csv_data2(res) {
-      console.log('process_csv_data');
-      let vm = this;
-      let result = res;
-      //let header = result[0].split(',')
-      //理由はわからないが，上記だと文字が表示されない
-      let header = ['content', 'price', 'did']; 
-      result.shift(); //headerの部分を削除
-      result.pop(); //最後に不要な空白が残っているのでその部分を削除
-      vm.csv_data2 = result.map(item=>{
-        let datas = item.split(',');
-        let temp = {};
-        for (const index in datas) {
-          let key = header[index];
-          temp[key] = datas[index];
-        }
-        return temp;
-      })
-    },
+    // onFileChange(file) {
+    //   const vm = this;
+    //   if (file) {
+    //     if (file.name.indexOf('.csv') > -1) {
+    //       vm.get_csv_data(file)
+    //       .then(vm.process_csv_data)
+    //     }
+    //   }
+    //   else {
+    //     console.log('not in file');
+    //   }
+    // },
+    // //fileReaderにファイルが読み込まれた時の処理．
+    // get_csv_data(file) {
+    //   return new Promise((resolve, reject) => {
+    //     console.log('get_csv_data');
+    //     const reader = new FileReader();
+    //     reader.onload = (e) => {
+    //       //uint8arrayにより数値配列に変換できる．＝＞detect()で扱える形になるから嬉しいってこと．
+    //       let codes = new Uint8Array(e.target.result);
+    //       let encoding = Encoding.detect(codes);
+    //       let unicodeString = Encoding.convert(codes, {
+    //         to: 'unicode',
+    //         from: encoding,
+    //         type: 'string'
+    //       })
+    //       this.encoding = encoding;
+    //       resolve(unicodeString.split(/\r\n|\n/)) 
+    //     };
+    //     reader.onerror = () => reject(error);
+    //     reader.readAsArrayBuffer(file); //これはfileの中身をbinaryのまま扱えるようにする関数
+    //     //reader.readAsText(file); //これはfileの中身をstring型で扱えるようにする関数
+    //   })
+    // },
+    // //fileReaderの読み込んだファイルを扱えるデータとして読み込む処理.
+    // process_csv_data(res) {
+    //   console.log('process_csv_data');
+    //   let vm = this;
+    //   let result = res;
+    //   //let header = result[0].split(',')
+    //   //理由はわからないが，上記だと文字が表示されない
+    //   let header = ['content', 'price']; 
+    //   result.shift(); //headerの部分を削除
+    //   result.pop(); //最後に不要な空白が残っているのでその部分を削除
+    //   vm.csv_data = result.map(item=>{
+    //     let datas = item.split(',');
+    //     let temp = {};
+    //     for (const index in datas) {
+    //       let key = header[index];
+    //       temp[key] = datas[index];
+    //     }
+    //     return temp;
+    //   })
+    // },
+    // //一括修正用
+    // onFileChange2(file) {
+    //   const vm = this;
+    //   if (file) {
+    //     if (file.name.indexOf('.csv') > -1) {
+    //       vm.get_csv_data(file)
+    //       .then(vm.process_csv_data2)
+    //     }
+    //   }
+    //   else {
+    //     console.log('not in file');
+    //   }
+    // },
+    // process_csv_data2(res) {
+    //   console.log('process_csv_data');
+    //   let vm = this;
+    //   let result = res;
+    //   //let header = result[0].split(',')
+    //   //理由はわからないが，上記だと文字が表示されない
+    //   let header = ['content', 'price', 'did']; 
+    //   result.shift(); //headerの部分を削除
+    //   result.pop(); //最後に不要な空白が残っているのでその部分を削除
+    //   vm.csv_data2 = result.map(item=>{
+    //     let datas = item.split(',');
+    //     let temp = {};
+    //     for (const index in datas) {
+    //       let key = header[index];
+    //       temp[key] = datas[index];
+    //     }
+    //     return temp;
+    //   })
+    // },
     save() {console.log('save')},
     cancel() {},
     open() {},
@@ -845,6 +891,11 @@ export default ({
 > tr:hover:not(.v-data-table__expanded__content):not(.v-data-table__empty-wrapper)
 {
 	color: red;
+}
+
+.jexcel_toolbar i {
+  margin-left: auto;
+  margin-right: auto;
 }
 
 </style>

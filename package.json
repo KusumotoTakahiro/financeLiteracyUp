@@ -28,6 +28,7 @@
     "encoding-japanese": "^2.0.0",
     "firebase": "^9.10.0",
     "firebase-tools": "^10.9.2",
+    "jspreadsheet-ce": "^4.10.7",
     "nuxt": "^2.15.8",
     "vue": "^2.6.14",
     "vue-server-renderer": "^2.6.14",

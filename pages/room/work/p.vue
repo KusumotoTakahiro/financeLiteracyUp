@@ -58,111 +58,6 @@
           </v-row>
         </div>
       </v-card>
-      <!-- 一括編集 -->
-      <!-- 一括編集の確認ダイアログ -->
-      <!-- <v-dialog
-        v-model="c_dialog_file"
-        outlined
-        hide-overlay
-        :height="$vuetify.breakpoint.height"
-        max-width="600"
-        content-class="rounded-lg elevation-2"
-        transition="dialog-bottom-transition"
-      >
-        <v-card 
-          class="py-5"
-          elevation="7"
-          outlined
-          shaped
-        >
-          <v-card-title class="justify-center">確認・修正</v-card-title>
-          <v-card-text>
-            <template>
-              <v-data-table
-                :headers="headers"
-                :items="new_csv"
-                item-key="id"
-                class="elevation-0"
-                fixed-header
-                hide-default-header
-              >
-                <template v-slot:item.content="props">
-                  <v-edit-dialog
-                    :return-value.sync="props.item.content"
-                    persistent
-                    style="height:auto"
-                    large
-                    @save="save"
-                    @cancel="cancel"
-                    @open="open"
-                    @close="close"
-                  >
-                    <div>{{ props.item.content }}</div>
-                    <template v-slot:input>
-                      <div class="mt-4 text-body-1 text-center">
-                        内容を変更
-                      </div>
-                      <v-text-field
-                        v-model="props.item.content"
-                        label="Edit"
-                        single-line
-                        autofocus
-                        class="input_case2 text-center"
-                      ></v-text-field>
-                    </template>
-                  </v-edit-dialog>
-                </template>
-                <template v-slot:item.price="props">
-                  <v-edit-dialog
-                    :return-value.sync="props.item.price"
-                    persistent
-                    style="height:auto"
-                    large
-                    @save="save"
-                    @cancel="cancel"
-                    @open="open"
-                    @close="close"
-                  >
-                    <div>{{ props.item.price }}</div>
-                    <template v-slot:input>
-                      <div class="mt-4 text-body-1 text-center">
-                        報酬を変更
-                      </div>
-                      <v-text-field
-                        v-model="props.item.price"
-                        label="Edit"
-                        single-line
-                        counter
-                        autofocus
-                        type="Number"
-                        class="input_case2 text-center"
-                      ></v-text-field>
-                    </template>
-                  </v-edit-dialog>
-                </template>
-              </v-data-table>
-              <div>  
-                <v-btn
-                  class="black--text mt-0"
-                  block
-                  height="40"
-                  color=""
-                  @click="create_items_from_csv()"
-                >登録</v-btn>
-              </div>
-            </template>
-          </v-card-text>
-          <v-card-actions >
-          <v-row justify="space-between">
-            <v-btn
-              text
-              @click="c_dialog_file = false"
-              class="mr-3"
-            >Close</v-btn>
-          </v-row>
-          </v-card-actions>
-        </v-card>
-      </v-dialog> -->
       <!-- 一括編集のダイアログ -->
       <v-dialog
         v-model="dialog_file"
@@ -348,8 +243,9 @@ export default ({
           this.works.push(data);
         })
       }
-      catch(error) {
-        console.log(error);
+      catch(e) {
+        const error_message = '『'+String(e) + '』が発生しました';
+        this.message(error_message, 3)
       }
     }
     else {
@@ -492,10 +388,12 @@ export default ({
           this.message('入力に漏れがあります．', 3);
         }
         else {
-          await this.create_and_update_works_by_myTable(original_data, modified_data)
-          await this.delete_works_by_myTable(original_data, modified_data)
-          await this.fetch_works();
-          this.dialog_file = false;
+          const finished = await this.create_and_update_works_by_myTable(original_data, modified_data)
+          if (finished) {
+            await this.delete_works_by_myTable(original_data, modified_data)
+            await this.fetch_works();
+            this.dialog_file = false;
+          }
         }
       }
     },
@@ -545,8 +443,10 @@ export default ({
      * 一括編集機能として，「DB上の保存済みデータとmyTableの差分を新規追加または報酬のみ変更」する関数.
      * @param {Array<Work>} original_data - DB上のWorkに登録されているデータ．
      * @param {Array<TableRow>} modified_data - myTableに記録されているデータ．
+     * @returns {Boolean} - 正常に終わればtrueを返す．data_check()で引っかかればfalseを返す．
      */
     async create_and_update_works_by_myTable(original_data, modified_data) {
+      let can_finish_successfully = true;
       for (let i = 0; i < modified_data.length; i++) {
         let modified_content_isExist = false;
         for (let j = 0; j < original_data.length; j++) {
@@ -556,19 +456,24 @@ export default ({
             // contentはあるが，priceが変更されている場合 => priceのみupdate.
             // そうでなければ，どっちも変わってないのでそのままにする．
             if (original_data[j].price !== modified_data[i][1]) {
-              const docid = original_data[j].id;
-              const docRefForUpdate = doc(fireStore, 'groups', this.roomPath, 'works', docid);
-              try {
-                await updateDoc(docRefForUpdate, {
-                  price: Number(modified_data[i][1])
-                })
-                await saveHistory(this.roomPath, this.user.uid,
-                  `${this.user.displayName}が『お手伝い』の${original_data[j].content}を修正しました`
-                )
+              if (this.data_check(original_data[j].content, modified_data[i][1])) {
+                const docid = original_data[j].id;
+                const docRefForUpdate = doc(fireStore, 'groups', this.roomPath, 'works', docid);
+                try {
+                  await updateDoc(docRefForUpdate, {
+                    price: Number(modified_data[i][1])
+                  })
+                  await saveHistory(this.roomPath, this.user.uid,
+                    `${this.user.displayName}が『お手伝い』の${original_data[j].content}を修正しました`
+                  )
+                }
+                catch(e) {
+                  const error_message = '『'+String(e) + '』が発生しました';
+                  this.message(error_message, 3)
+                }
               }
-              catch(e) {
-                const error_message = '『'+String(e) + '』が発生しました';
-                this.message(error_message, 3)
+              else {
+                can_finish_successfully = false;
               }
             }
           }
@@ -577,22 +482,28 @@ export default ({
         if (!modified_content_isExist) {
           // 既に空白チェック済みなので，contentが空白かどうかをみれば，両方が空白かどうかは判断がつく．
           if (!(modified_data[i][0].trim() === '')) {
-            try {
-              await addDoc(this.workCollRef, {
-                content: String(modified_data[i][0]),
-                price: Number(modified_data[i][1]),        
-              })
-              await saveHistory(this.roomPath, this.user.uid, 
-                `${this.user.displayName}が${String(modified_data[i][0])}を『お手伝い』に追加しました`
-              )
+            if (this.data_check(modified_data[i][0], modified_data[i][1])) {
+              try {
+                await addDoc(this.workCollRef, {
+                  content: String(modified_data[i][0]),
+                  price: Number(modified_data[i][1]),        
+                })
+                await saveHistory(this.roomPath, this.user.uid, 
+                  `${this.user.displayName}が${String(modified_data[i][0])}を『お手伝い』に追加しました`
+                )
+              }
+              catch(e) {
+                const error_message = '『'+String(e) + '』が発生しました';
+                this.message(error_message, 3)
+              }
             }
-            catch(e) {
-              const error_message = '『'+String(e) + '』が発生しました';
-              this.message(error_message, 3)
+            else {
+              can_finish_successfully = false;
             }
           }
         }
       }
+      return can_finish_successfully;
     },
 
     /**
@@ -638,9 +549,9 @@ export default ({
             `${this.user.displayName}が${this.content}を『お手伝い』に追加しました`
           )
         }
-        catch(error) {
-          console.log('create_item error');
-          console.log(error);
+        catch(e) {
+          const error_message = '『'+String(e) + '』が発生しました';
+          this.message(error_message, 3)
         }
         this.dialog = false;
         this.content = "";
@@ -654,15 +565,15 @@ export default ({
       let obj = this.selected;
       for(let key in obj ) {
         if( obj.hasOwnProperty(key) ) {
-          console.log(obj[key])
           try {
             await deleteDoc(doc(fireStore, "groups", this.roomPath, "works", obj[key].id));
             await saveHistory(this.roomPath, this.user.uid, 
               `${this.user.displayName}が${obj[key].content}を『お手伝い』から削除しました`
             )
           }
-          catch(error) {
-            console.log(error)
+          catch(e) {
+            const error_message = '『'+String(e) + '』が発生しました';
+            this.message(error_message, 3)
           }
         }
       }
@@ -670,7 +581,6 @@ export default ({
     },
     // DBからworksを再取得するための関数(主に，データ更新時に利用する)
     async fetch_works() {
-      console.log('fetch_works')
       const works_all = await getDocs(this.workCollRef);
       this.works = [];
       works_all.forEach(doc => {
@@ -680,13 +590,19 @@ export default ({
           data.id = doc.id;
           this.works.push(data);
         }
-        catch(error) {
-          console.log(error);
+        catch(e) {
+          const error_message = '『'+String(e) + '』が発生しました';
+          this.message(error_message, 3)
         }
         
       })
     },
-    //DBの登録前にcontent(内容)とprice(報酬)の入力内容を簡易的にチェックする関数
+    /**
+     * DBの登録前にcontent(内容)とprice(報酬)の入力内容を簡易的にチェックする関数
+     * @param {String} content - 内容であり，短すぎる（一文字）のものはエラーで変えす．
+     * @param {Number} price - 半角数字のみを許容する．かつ金額の限度は決めてない．
+     * @returns {boolean} - data_checkして問題があればfalseを返す．問題なければtrueを返す． 
+     */
     data_check(content, price) {
       let flag = true;
       if (!this.is_written(content, price)) {
@@ -737,10 +653,6 @@ export default ({
     T(t) {
       return jSuites.translate(t);
     },
-    save() {console.log('save')},
-    cancel() {},
-    open() {},
-    close() {},
   },
   
 })

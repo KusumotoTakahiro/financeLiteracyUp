@@ -299,7 +299,6 @@ export default {
   async mounted() {
     // firebase authenticationから現在ログインしているユーザの状態を取る
     let user = await authStateChanged();
-    console.log(user);
     if (user.uid) { //useのuidで判定していたが，それだとnullの時にエラーが生じる
       try {
         const docRef = doc(fireStore, "users", user.uid);
@@ -313,7 +312,6 @@ export default {
         catch(error) {
           console.log(error);
         }
-        console.log(this.roomPath);
         if (!this.roomPath) {
           this.$store.commit("addMessage", {
             text: "不正入室です.グループ参加後に入室してください",

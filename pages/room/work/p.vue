@@ -268,6 +268,7 @@ import {
   authStateChanged,
   saveHistory,
 } from '@/plugins/auth'
+import '@/plugins/typeDefine'
 import Encoding from  'encoding-japanese';
 
 export default ({
@@ -317,7 +318,6 @@ export default ({
           type: 'numeric',
           title: '報酬',
           width: 150,
-          mask:'#,##' //maskは形式の指定 #,##で書式を指定している
         }, 
       ],
       works: [], // DBから取得した全データを格納
@@ -377,6 +377,21 @@ export default ({
       this.$router.push('/room')
     },
 
+    /**
+     * store経由でuserにアラートを数秒提示する関数．
+     * @param {string} text - アラートに表示する内容．
+     * @param {number} risk - アラートの色を指定する1が緑,2が黄色,3が赤
+     */
+    message(text, risk) {
+      this.$store.commit("addMessage", {
+        text: text,
+        risk: risk,
+      });
+    },
+
+    /**
+     * 一括編集ボタン押下時に実行され，myTableを最新状態に書き換えて表示する.
+     */
     change_data_file() {
       this.dialog_file = true;
       //処理が前後するとid=mytableの要素がとれないエラーが発生するため，
@@ -388,15 +403,41 @@ export default ({
           const cloneParent = parent.cloneNode(false) //外側だけ複製
           parent.parentNode.replaceChild(cloneParent, parent)
         }
-        //worksからdataを形成
-        const data = []
+        //worksからmyTable_dataを形成
+        const myTable_data = [];
         this.works.forEach(work => {
-          data.push([work.content, work.price])
+          myTable_data.push([work.content, work.price])
         })
         //jspreadsheetに転記
         const myTable = jspreadsheet(document.getElementById('mytable'), {
-          data: data,
+          data: myTable_data,
           columns: this.columns,
+          contextMenu: function(obj, row, event, section) {
+            let items = [];
+            // Insert new row
+            items.push({
+              title: T('新しい行を追加'),
+              onclick: function() {
+                obj.insertRow(1, parseInt(row), 1); //要修正
+              }
+            });
+            items.push({
+              title: T('行の削除'),
+              onclick: function() {
+                obj.deleteRow(obj.getSelectedRows().length ? undefined : parseInt(y));
+              }
+            });
+            // Save
+            items.push({
+              title: T('保存'),
+              icon: 'save',
+              shortcut: 'Ctrl + S',
+              onclick: function () {
+                obj.download();
+              }
+            });
+            return items;
+          },
           toolbar: [
             {
               type: 'i',
@@ -416,57 +457,172 @@ export default ({
             {
               type: 'i',
               content: 'close',
-              onclick: ()=>{this.dialog_file=false}
+              onclick: ()=>{
+                this.dialog_file=false;
+                // ここでmyTableのデータを削除する処理を入れるかどうか.
+              }
             },
           ],
         });
         this.myTable = myTable;
-      }, 500)
+      }, 100)
     },
 
-    //jspreadsheetでの変更時に起動する関数
+    /**
+     * jspreadsheetでの保存ボタンを押下時に実行される関数.
+     */
     async save_data() {
-      const myTableData = this.myTable.getData();
-      const length = myTableData.length;
-      const works = this.works;
-      let content_exist = false;
-      for (let i = 0; i < length; i++) {
-        for (let j = 0; j < works.length; j++) {
-          if (works[j].content === myTableData[i][0]) {
-            content_exist = true;
-            if (works[j].price !== myTableData[i][1]) {
-              console.log(myTableData[i][0], 'のpriceを変更する')
+      /**
+       * myTableに記録されている[内容,報酬]の配列の全データ．
+       * @type {Array<TableRow>}
+       */
+      const modified_data = this.myTable.getData();
+      /**
+       * DBに登録されているworksの全データを取得．
+       * @type {Array<Work>}
+       */
+      const original_data = this.works;
+
+      if (this.check_content_is_duplicate(modified_data)) {
+        this.message('入力に重複する内容が含まれています．', 3);
+      }
+      else {
+        //ここに空白チェック関数を入れる．
+        if (this.check_missing_entries_myTable(modified_data)) {
+          this.message('入力に漏れがあります．', 3);
+        }
+        else {
+          await this.create_and_update_works_by_myTable(original_data, modified_data)
+          await this.delete_works_by_myTable(original_data, modified_data)
+          await this.fetch_works();
+          this.dialog_file = false;
+        }
+      }
+    },
+
+    /**
+     * 一括編集機能を行う前に，myTableに同一名のお仕事が重複して登録されていないかを確認する関数．
+     * @param {Array<TableRow>} modified_data - myTableに記録されているデータ．
+     * @returns {boolean} - コンテンツ名が重複していればTrue，いなければFalseを返す.
+     */
+    check_content_is_duplicate(modified_data) {
+      const modified_data_length = modified_data.length
+      for (let i = 0; i < modified_data_length; i++) {
+        let content_is_duplicate = false;
+        for (let j = 0; j < modified_data_length; j++) {
+          if ((i !== j)&&(modified_data[i][0]===modified_data[j][0])) {
+            content_is_duplicate = true;
+          }
+        }
+        if (content_is_duplicate) {
+          return content_is_duplicate;
+        }
+      }
+      return false;
+    },
+
+    /**
+     * 一括編集機能を行う前に，myTableに記入漏れがないかを確認する関数.
+     * @param {Array<TableRow>} modified_data - myTableに記録されているデータ．
+     * @returns {boolean} - 内容に記入漏れがないかを確認し，あればTrue，なければFalseを返す.
+     * @description modified_dataの内，両方が空白のものは記入漏れとみなさない．
+     * 片方が記入されているが，もう片方が空白のもののみ記入漏れとみなし，Trueを返す．
+     */
+    check_missing_entries_myTable(modified_data) {
+      for (let i = 0; i < modified_data.length; i++) {
+        const content_isEmpty = modified_data[i][0].trim() === '';
+        const price_isEmpty = String(modified_data[i][1]).trim() === '';
+        if (content_isEmpty || price_isEmpty) {
+          if (!(content_isEmpty && price_isEmpty)) {
+            return true;
+          } 
+        }
+      }
+      return false;
+    },
+
+    /**
+     * 一括編集機能として，「DB上の保存済みデータとmyTableの差分を新規追加または報酬のみ変更」する関数.
+     * @param {Array<Work>} original_data - DB上のWorkに登録されているデータ．
+     * @param {Array<TableRow>} modified_data - myTableに記録されているデータ．
+     */
+    async create_and_update_works_by_myTable(original_data, modified_data) {
+      for (let i = 0; i < modified_data.length; i++) {
+        let modified_content_isExist = false;
+        for (let j = 0; j < original_data.length; j++) {
+          // contentがある場合は変更の可能性がある．
+          if (original_data[j].content === modified_data[i][0]) {
+            modified_content_isExist = true;
+            // contentはあるが，priceが変更されている場合 => priceのみupdate.
+            // そうでなければ，どっちも変わってないのでそのままにする．
+            if (original_data[j].price !== modified_data[i][1]) {
+              const docid = original_data[j].id;
+              const docRefForUpdate = doc(fireStore, 'groups', this.roomPath, 'works', docid);
+              try {
+                await updateDoc(docRefForUpdate, {
+                  price: Number(modified_data[i][1])
+                })
+                await saveHistory(this.roomPath, this.user.uid,
+                  `${this.user.displayName}が『お手伝い』の${original_data[j].content}を修正しました`
+                )
+              }
+              catch(e) {
+                const error_message = '『'+String(e) + '』が発生しました';
+                this.message(error_message, 3)
+              }
+            }
+          }
+        }
+        // myTableにしか載っていないcontentを新規データとしてDBに登録する
+        if (!modified_content_isExist) {
+          // 既に空白チェック済みなので，contentが空白かどうかをみれば，両方が空白かどうかは判断がつく．
+          if (!(modified_data[i][0].trim() === '')) {
+            try {
+              await addDoc(this.workCollRef, {
+                content: String(modified_data[i][0]),
+                price: Number(modified_data[i][1]),        
+              })
+              await saveHistory(this.roomPath, this.user.uid, 
+                `${this.user.displayName}が${String(modified_data[i][0])}を『お手伝い』に追加しました`
+              )
+            }
+            catch(e) {
+              const error_message = '『'+String(e) + '』が発生しました';
+              this.message(error_message, 3)
             }
           }
         }
       }
-      for (let i = 0; i < works.length; i++) {
-        let work_exist = false
-        for (let j = 0; j < length; j++) {
-          if (works[i].content === myTableData[j][0]) {
-            work_exist = true
+    },
+
+    /**
+     * 一括編集機能として，「DB上の保存済みデータにあるが，myTableにないデータを削除する」関数.
+     * @param {Array<Work>} original_data - DB上のWorkに登録されているデータ．
+     * @param {Array<TableRow>} modified_data - myTableに記録されているデータ．
+     */
+    async delete_works_by_myTable(original_data, modified_data) {
+      for (let i = 0; i < original_data.length; i++) {
+        let original_content_isExist = false;
+        for (let j = 0; j < modified_data.length; j++) {
+          if (original_data[i].content === modified_data[j][0]) {
+            original_content_isExist = true;
           }
         }
-        if (!work_exist) {
-          console.log(works[i].content, 'を削除する')
+        //myTableにはなくなっていて，DBにだけ残ってるデータを削除する．
+        if (!original_content_isExist) {
+          const docid = original_data[i].id; 
+          try {
+            await deleteDoc(doc(fireStore, "groups", this.roomPath, "works", docid));
+            await saveHistory(this.roomPath, this.user.uid, 
+              `${this.user.displayName}が${original_data[i].content}を『お手伝い』から削除しました`
+            )
+          }
+          catch(e) {
+            const error_message = '『'+String(e) + '』が発生しました';
+            this.message(error_message, 3)
+          }
         }
       }
-      // try {
-      //   await addDoc(this.workCollRef, {
-      //     content: String(content),
-      //     price: Number(price),        
-      //   })
-      //   await saveHistory(this.roomPath, this.user.uid, 
-      //     `${this.user.displayName}が${content}を『お手伝い』に追加しました`
-      //   )
-      // }
-      // catch(error) {
-      //   console.log('create_item error');
-      //   console.log(error);
-      // }
-      // this.fetch_works();
-      // //本来は誤操作防止のため，dialogはあとで閉じたほうがいいはず
-      // this.dialog_file = false;
     },
 
     //tableに登録するアイテムの作成 作成は一つずつ
@@ -572,283 +728,15 @@ export default ({
       if (content.length==1) ok = false;
       return ok;
     },
-    // 今回は使わなくなったファイル処理ですが，結構調べるのには，苦労したので，一旦コメントアウトで残しておきます．
-    // あとで，Notionに移しておこうと思います．
-    // download_format() {
-    //   console.log('format_download');
-    //   //文字列型の二次元配列データ
-    //   const data = [
-    //     ["content", "price"],
-    //     ["皿洗い（例）", "80"],
-    //     ["掃除（例）", "100"]
-    //   ]
-    //   //作った二次元配列をCSV文字列に直す．
-    //   let csv_string = "";
-    //   for (let d of data) {
-    //     csv_string += d.join(",");
-    //     csv_string += '\r\n';
-    //   }
-    //   //ファイル名
-    //   const file_name = "format.csv";
-    //   //BOMを作る これをしないと文字化けした
-    //   var bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
-    //   //CSVのバイナリデータを作る
-    //   const blob = new Blob([bom, csv_string], {type: "text/csv"});
-    //   const url = URL.createObjectURL(blob);
-    //   const link = document.createElement("a");
-    //   link.download = file_name;
-    //   link.href = url;
-    //   link.click(); //リンクをクリックしたことにする．
-    //   URL.revokeObjectURL(link.href); //リンクに当てられたメモリを開放する
-    // },
-    // ファイル処理関連の関数　上記と同様です．
-    // download_now() {
-    //   console.log('download_now');
-    //   //文字列型の二次元配列データ
-    //   const data = [["content", "price", "id"]]
-    //   //dataを今のテーブルをもとに生成する.
-    //   for (let i = 0; i < this.works.length; i++) {
-    //     let work = this.works[i];
-    //     data.push([work.content, work.price, work.id]);
-    //   }
-    //   //作った二次元配列をCSV文字列に直す．
-    //   let csv_string = "";
-    //   for (let d of data) {
-    //     csv_string += d.join(",");
-    //     csv_string += '\r\n';
-    //   }
-    //   //ファイル名
-    //   const file_name = "works.csv";
-    //   //BOMを作る これをしないと文字化けした
-    //   var bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
-    //   //CSVのバイナリデータを作る
-    //   const blob = new Blob([bom, csv_string], {type: "text/csv"});
-    //   const url = URL.createObjectURL(blob);
-    //   const link = document.createElement("a");
-    //   link.download = file_name;
-    //   link.href = url;
-    //   link.click(); //リンクをクリックしたことにする．
-    //   URL.revokeObjectURL(link.href); //リンクに当てられたメモリを開放する
-    // },
-    //ファイル処理の関数．上記と同様です．
-    //現在のCSVデータに記入ミスがないかを確認表示する関数
-    // check_csv() {
-    //   console.log('check_csv');
-    //   const vm = this;
-    //   vm.new_csv = []; //前のデータを空にする
-    //   this.c_dialog_file = true;
-    //   //登録の際の記入ミスがないかをチェック
-    //   vm.csv_data.forEach((data, index) => {
-    //     if (!this.is_written(data.content, data.price)) {
-    //       this.$store.commit("addMessage", {
-    //         text: `${index+1}行目に記入漏れがあります`,
-    //         risk: 3,
-    //       });
-    //     }
-    //     else if (!this.is_long(data.content)) {
-    //       this.$store.commit("addMessage", {
-    //         texat: `${index+1}行目の内容の説明が短いです`,
-    //         risk: 3,
-    //       });
-    //     }
-    //     data.id = index;
-    //     this.new_csv.push(data);
-    //   })
-    // },
 
-    //一括修正用
-    // check_csv2() {
-    //   console.log('check_csv2');
-    //   const vm = this;
-    //   vm.new_csv2 = []; //前のデータを空にする
-    //   vm.c_dialog_3 = true;
-    //   //ファイル形式のチェック
-    //   let msg = func.checkFile(vm.csv_data2, vm.works)
-    //   if (msg!=="") {
-    //     this.$store.commit("addMessage", {
-    //       text: msg,
-    //       risk: 3,
-    //     });
-    //     vm.c_dialog_3 = false;
-    //     return;
-    //   } 
-
-    //   let flag = true;
-    //   //登録の際の記入ミスがないかをチェック
-    //   vm.csv_data2.forEach((data, index) => {
-    //     if (!vm.is_written(data.content, data.price)) {
-    //       vm.$store.commit("addMessage", {
-    //         text: `${index+1}行目に記入漏れがあります`,
-    //         risk: 3,
-    //       });
-    //       flag = false;
-    //     }
-    //     else if (!vm.is_long(data.content)) {
-    //       vm.$store.commit("addMessage", {
-    //         text: `${index+1}行目の内容の説明が短いです`,
-    //         risk: 3,
-    //       });
-    //       flag = false;
-    //     }
-    //     else if (!func.isNumber(data.price)) {
-    //       vm.$store.commit("addMessage", {
-    //         text: `金額が半角数字ではありません`,
-    //         risk: 3,
-    //       });
-    //       flag = false;
-    //     }
-    //     if (flag) {
-    //       data.id = index;
-    //       vm.new_csv2.push(data);
-    //     }
-    //     else {
-    //       vm.c_dialog_3 = false;
-    //     }
-    //   })
-    // },
-
-    //create_items_from_csv内で実行される関数
-    // async create_item_for_csv(content, price) { 
-    //   console.log('create_item_for_csv');
-    //   console.log(content, price);
-    //   try {
-    //     await addDoc(this.workCollRef, {
-    //       content: String(content),
-    //       price: Number(price),        
-    //     })
-    //     await saveHistory(this.roomPath, this.user.uid, 
-    //       `${this.user.displayName}が${content}を『お手伝い』に追加しました`
-    //     )
-    //   }
-    //   catch(error) {
-    //     console.log('create_item error');
-    //     console.log(error);
-    //   }
-    //   this.new_csv = []; //登録終わったので空にする
-    // },
-
-    //最終的に，「修正する」ボタンを押すと実行される
-    // async update_items_from_csv() {
-    //   console.log('update_items_from_csv');
-    //   let vm = this;
-    //   const data = vm.new_csv2;
-    //   const length = data.length;
-    //   //本来は誤操作防止のため，dialogはあとで閉じたほうがいいが，
-    //   this.c_dialog_3 = false;
-    //   this.dialog_3 = false;
-    //   //DBへの登録が先だとブラウザ側で少しタイムラグになるので，先にdialogを閉じる.
-    //   for (let i = 0; i < length; i++) {
-    //     await this.update_item_for_csv(data[i].content, data[i].price, data[i].did);
-    //   }
-    //   this.fetch_works();
-    // },
-    //update_items_from_csv内で実行される関数
-    // async update_item_for_csv(content, price, did) { 
-    //   console.log('update_item_for_csv');
-    //   try {
-    //     const Ref = doc(fireStore, "groups", this.roomPath, "works", did);
-    //     await updateDoc(Ref, {
-    //       content: String(content),
-    //       price: Number(price),        
-    //     })
-    //     await saveHistory(this.roomPath, this.user.uid, 
-    //       `${this.user.displayName}が『お手伝い』の${content}を修正しました`
-    //     )
-    //   }
-    //   catch(error) {
-    //     console.log('update_item error');
-    //     console.log(error);
-    //   }
-    //   this.new_csv2 = []; //登録終わったので空にする
-    // },
-
-    //fileがUploadされたときにcsv_dataを更新する(csv_dataを取り込む)
-    // onFileChange(file) {
-    //   const vm = this;
-    //   if (file) {
-    //     if (file.name.indexOf('.csv') > -1) {
-    //       vm.get_csv_data(file)
-    //       .then(vm.process_csv_data)
-    //     }
-    //   }
-    //   else {
-    //     console.log('not in file');
-    //   }
-    // },
-    // //fileReaderにファイルが読み込まれた時の処理．
-    // get_csv_data(file) {
-    //   return new Promise((resolve, reject) => {
-    //     console.log('get_csv_data');
-    //     const reader = new FileReader();
-    //     reader.onload = (e) => {
-    //       //uint8arrayにより数値配列に変換できる．＝＞detect()で扱える形になるから嬉しいってこと．
-    //       let codes = new Uint8Array(e.target.result);
-    //       let encoding = Encoding.detect(codes);
-    //       let unicodeString = Encoding.convert(codes, {
-    //         to: 'unicode',
-    //         from: encoding,
-    //         type: 'string'
-    //       })
-    //       this.encoding = encoding;
-    //       resolve(unicodeString.split(/\r\n|\n/)) 
-    //     };
-    //     reader.onerror = () => reject(error);
-    //     reader.readAsArrayBuffer(file); //これはfileの中身をbinaryのまま扱えるようにする関数
-    //     //reader.readAsText(file); //これはfileの中身をstring型で扱えるようにする関数
-    //   })
-    // },
-    // //fileReaderの読み込んだファイルを扱えるデータとして読み込む処理.
-    // process_csv_data(res) {
-    //   console.log('process_csv_data');
-    //   let vm = this;
-    //   let result = res;
-    //   //let header = result[0].split(',')
-    //   //理由はわからないが，上記だと文字が表示されない
-    //   let header = ['content', 'price']; 
-    //   result.shift(); //headerの部分を削除
-    //   result.pop(); //最後に不要な空白が残っているのでその部分を削除
-    //   vm.csv_data = result.map(item=>{
-    //     let datas = item.split(',');
-    //     let temp = {};
-    //     for (const index in datas) {
-    //       let key = header[index];
-    //       temp[key] = datas[index];
-    //     }
-    //     return temp;
-    //   })
-    // },
-    // //一括修正用
-    // onFileChange2(file) {
-    //   const vm = this;
-    //   if (file) {
-    //     if (file.name.indexOf('.csv') > -1) {
-    //       vm.get_csv_data(file)
-    //       .then(vm.process_csv_data2)
-    //     }
-    //   }
-    //   else {
-    //     console.log('not in file');
-    //   }
-    // },
-    // process_csv_data2(res) {
-    //   console.log('process_csv_data');
-    //   let vm = this;
-    //   let result = res;
-    //   //let header = result[0].split(',')
-    //   //理由はわからないが，上記だと文字が表示されない
-    //   let header = ['content', 'price', 'did']; 
-    //   result.shift(); //headerの部分を削除
-    //   result.pop(); //最後に不要な空白が残っているのでその部分を削除
-    //   vm.csv_data2 = result.map(item=>{
-    //     let datas = item.split(',');
-    //     let temp = {};
-    //     for (const index in datas) {
-    //       let key = header[index];
-    //       temp[key] = datas[index];
-    //     }
-    //     return temp;
-    //   })
-    // },
+    /**
+     * jspreadSheetでのコンテキストメニューを作る際に内部で使用しているTitle作成関数
+     * @param {string} t - タイトルを書く．e.g. save as や insert new row など
+     * @returns {string} - 正直良く分からん．とりあえず，Titleように変換してくれるっぽい．
+     */
+    T(t) {
+      return jSuites.translate(t);
+    },
     save() {console.log('save')},
     cancel() {},
     open() {},
@@ -897,5 +785,4 @@ export default ({
   margin-left: auto;
   margin-right: auto;
 }
-
 </style>

@@ -11,3 +11,25 @@
  * @typedef {[string, number]} TableRow
  * @description TableRowは，2つの要素を持っています．最初の要素がお仕事の内容（string)で，二番目の要素がお仕事の報酬（price）です．
  */
+
+/**
+ * FirebaseのDB上でのCollectionReference型のこと．扱いとしてはObject型．
+ * @typedef {Object} Collection
+ */
+
+/**
+ * FirebaseのDB上でのDocumentReferece型のこと．扱いとしてはObject型．
+ * @typedef {Object} Document
+ */
+
+/**
+ * DB上でのUser型．　扱いとしてはObject型．
+ * @typedef {Object} User 
+ * @property {string} uid - Userのid
+ * その他にもあるが，あまり使わない．
+ */
+
+/**
+ * JspreadSheet型(おそらくはObject型だが，特殊なため再定義)
+ * @typedef {Object} JspreadSheet
+ */

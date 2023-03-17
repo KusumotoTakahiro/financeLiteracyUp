@@ -62,7 +62,7 @@
       <v-dialog
         v-model="dialog_file"
         persistent
-        width="auto"
+        max-width="600"
         transition="dialog-bottom-transition"
       >
         <v-card 
@@ -144,27 +144,27 @@
   </v-row>
 </template>
 <script>
-import { getAuth } from "firebase/auth";
-import * as func from "~/plugins/myPlugins";
 import {
   collection,
   doc,
-  setDoc,
-  updateDoc,
   getDoc,
-  getDocs,
-  addDoc,
-  deleteDoc,
 } from "firebase/firestore";
 import {
   fireStore,
 } from "~/plugins/firebase";
 import {
   authStateChanged,
-  saveHistory,
 } from '@/plugins/auth'
 import '@/plugins/typeDefine'
-import Encoding from  'encoding-japanese';
+import {
+  save_data_by_jspreadsheet as save_data,
+  create_item,
+  delete_items,
+  fetch_items,
+  clear_myTable,
+  create_myTable
+} from '~/plugins/crudActions';
+import EventBus from "~/plugins/event-bus";
 
 export default ({
   name: 'workParentPage',
@@ -180,10 +180,6 @@ export default ({
     return {
       dialog: false,
       dialog_file: false, //一括追加用
-      c_dialog_file: false, //一括追加用
-      main_dialog: true,
-      csv_data: null, //一括追加用
-      new_csv:[], //一括追加用
       content: "",
       price: null,
       isLogin: false,
@@ -207,16 +203,16 @@ export default ({
         { 
           type: 'text',
           title: 'お手伝い',
-          width: 200
+          width: 250
         },
         { 
           type: 'numeric',
           title: '報酬',
-          width: 150,
+          width: 200,
         }, 
       ],
-      works: [], // DBから取得した全データを格納
-      myTable: null,
+      works: [], // DBから取得した全データを格納.
+      myTable: null, // 一括修正時のデータを一時的に格納.
     }
   },
   async mounted() {
@@ -234,57 +230,31 @@ export default ({
         this.workCollRef = workCollRef;
         
         //参照の中からworksを取得して，works(collection)の中のdocumentを全取得
-        const works_all = await getDocs(workCollRef);
-
-        works_all.forEach(doc => {
-          //ここでworksを更新する =>データがテーブルに反映されるはず
-          let data = doc.data();
-          data.id = doc.id;
-          this.works.push(data);
-        })
+        this.works = await fetch_items(workCollRef);
       }
       catch(e) {
-        const error_message = '『'+String(e) + '』が発生しました';
-        this.message(error_message, 3)
+        this.message('『'+String(e) + '』が発生しました', 3)
       }
     }
     else {
-      this.$store.commit("addMessage", {
-        text: "ログインしてください",
-        risk: 3, 
-      })
+      this.message('ログインしてください', 3);
       this.$router.push('/');
     }
+    EventBus.$on('res', res => {
+      if (res==='close') this.dialog_file = false;
+      else if (res==='save') this.edit_all();
+    });
   },
   computed: {
 		width: function() {
 			return this.$vuetify.breakpoint.width/5*4;
 		},
-    disabled: function() {
-      return this.csv_data===null? true : false;
-    },
-    disabled2: function() {
-      return this.csv_data2===null? true : false;
-    }
 	},
   methods: {
     // ホームボタンを押したときの関数
     goToHome() {
       this.$router.push('/room')
     },
-
-    /**
-     * store経由でuserにアラートを数秒提示する関数．
-     * @param {string} text - アラートに表示する内容．
-     * @param {number} risk - アラートの色を指定する1が緑,2が黄色,3が赤
-     */
-    message(text, risk) {
-      this.$store.commit("addMessage", {
-        text: text,
-        risk: risk,
-      });
-    },
-
     /**
      * 一括編集ボタン押下時に実行され，myTableを最新状態に書き換えて表示する.
      */
@@ -293,366 +263,53 @@ export default ({
       //処理が前後するとid=mytableの要素がとれないエラーが発生するため，
       //以下のようにsetTimeOutで時間差を作っている．
       setTimeout(() => {
-        //子要素の全消し
-        let parent = document.getElementById('mytable')
-        if ('cloneNode' in parent) {
-          const cloneParent = parent.cloneNode(false) //外側だけ複製
-          parent.parentNode.replaceChild(cloneParent, parent)
-        }
-        //worksからmyTable_dataを形成
-        const myTable_data = [];
-        this.works.forEach(work => {
-          myTable_data.push([work.content, work.price])
-        })
+        clear_myTable();  //myTableの初期化
         //jspreadsheetに転記
-        const myTable = jspreadsheet(document.getElementById('mytable'), {
-          data: myTable_data,
-          columns: this.columns,
-          contextMenu: function(obj, row, event, section) {
-            let items = [];
-            // Insert new row
-            items.push({
-              title: T('新しい行を追加'),
-              onclick: function() {
-                obj.insertRow(1, parseInt(row), 1); //要修正
-              }
-            });
-            items.push({
-              title: T('行の削除'),
-              onclick: function() {
-                obj.deleteRow(obj.getSelectedRows().length ? undefined : parseInt(y));
-              }
-            });
-            // Save
-            items.push({
-              title: T('保存'),
-              icon: 'save',
-              shortcut: 'Ctrl + S',
-              onclick: function () {
-                obj.download();
-              }
-            });
-            return items;
-          },
-          toolbar: [
-            {
-              type: 'i',
-              content: 'undo',
-              onclick: function() {myTable.undo()}
-            },
-            {
-              type: 'i',
-              content: 'redo',
-              onclick: function() {myTable.redo()}
-            },
-            {
-              type: 'i',
-              content: 'save',
-              onclick: ()=>{this.save_data()}
-            },
-            {
-              type: 'i',
-              content: 'close',
-              onclick: ()=>{
-                this.dialog_file=false;
-                // ここでmyTableのデータを削除する処理を入れるかどうか.
-              }
-            },
-          ],
-        });
+        const myTable = create_myTable(this.works, this.columns, 'works');
         this.myTable = myTable;
       }, 100)
     },
-
-    /**
-     * jspreadsheetでの保存ボタンを押下時に実行される関数.
-     */
-    async save_data() {
-      /**
-       * myTableに記録されている[内容,報酬]の配列の全データ．
-       * @type {Array<TableRow>}
-       */
-      const modified_data = this.myTable.getData();
-      /**
-       * DBに登録されているworksの全データを取得．
-       * @type {Array<Work>}
-       */
-      const original_data = this.works;
-
-      if (this.check_content_is_duplicate(modified_data)) {
-        this.message('入力に重複する内容が含まれています．', 3);
-      }
-      else {
-        //ここに空白チェック関数を入れる．
-        if (this.check_missing_entries_myTable(modified_data)) {
-          this.message('入力に漏れがあります．', 3);
-        }
-        else {
-          const finished = await this.create_and_update_works_by_myTable(original_data, modified_data)
-          if (finished) {
-            await this.delete_works_by_myTable(original_data, modified_data)
-            await this.fetch_works();
-            this.dialog_file = false;
-          }
-        }
-      }
-    },
-
-    /**
-     * 一括編集機能を行う前に，myTableに同一名のお仕事が重複して登録されていないかを確認する関数．
-     * @param {Array<TableRow>} modified_data - myTableに記録されているデータ．
-     * @returns {boolean} - コンテンツ名が重複していればTrue，いなければFalseを返す.
-     */
-    check_content_is_duplicate(modified_data) {
-      const modified_data_length = modified_data.length
-      for (let i = 0; i < modified_data_length; i++) {
-        let content_is_duplicate = false;
-        for (let j = 0; j < modified_data_length; j++) {
-          if ((i !== j)&&(modified_data[i][0]===modified_data[j][0])) {
-            content_is_duplicate = true;
-          }
-        }
-        if (content_is_duplicate) {
-          return content_is_duplicate;
-        }
-      }
-      return false;
-    },
-
-    /**
-     * 一括編集機能を行う前に，myTableに記入漏れがないかを確認する関数.
-     * @param {Array<TableRow>} modified_data - myTableに記録されているデータ．
-     * @returns {boolean} - 内容に記入漏れがないかを確認し，あればTrue，なければFalseを返す.
-     * @description modified_dataの内，両方が空白のものは記入漏れとみなさない．
-     * 片方が記入されているが，もう片方が空白のもののみ記入漏れとみなし，Trueを返す．
-     */
-    check_missing_entries_myTable(modified_data) {
-      for (let i = 0; i < modified_data.length; i++) {
-        const content_isEmpty = modified_data[i][0].trim() === '';
-        const price_isEmpty = String(modified_data[i][1]).trim() === '';
-        if (content_isEmpty || price_isEmpty) {
-          if (!(content_isEmpty && price_isEmpty)) {
-            return true;
-          } 
-        }
-      }
-      return false;
-    },
-
-    /**
-     * 一括編集機能として，「DB上の保存済みデータとmyTableの差分を新規追加または報酬のみ変更」する関数.
-     * @param {Array<Work>} original_data - DB上のWorkに登録されているデータ．
-     * @param {Array<TableRow>} modified_data - myTableに記録されているデータ．
-     * @returns {Boolean} - 正常に終わればtrueを返す．data_check()で引っかかればfalseを返す．
-     */
-    async create_and_update_works_by_myTable(original_data, modified_data) {
-      let can_finish_successfully = true;
-      for (let i = 0; i < modified_data.length; i++) {
-        let modified_content_isExist = false;
-        for (let j = 0; j < original_data.length; j++) {
-          // contentがある場合は変更の可能性がある．
-          if (original_data[j].content === modified_data[i][0]) {
-            modified_content_isExist = true;
-            // contentはあるが，priceが変更されている場合 => priceのみupdate.
-            // そうでなければ，どっちも変わってないのでそのままにする．
-            if (original_data[j].price !== modified_data[i][1]) {
-              if (this.data_check(original_data[j].content, modified_data[i][1])) {
-                const docid = original_data[j].id;
-                const docRefForUpdate = doc(fireStore, 'groups', this.roomPath, 'works', docid);
-                try {
-                  await updateDoc(docRefForUpdate, {
-                    price: Number(modified_data[i][1])
-                  })
-                  await saveHistory(this.roomPath, this.user.uid,
-                    `${this.user.displayName}が『お手伝い』の${original_data[j].content}を修正しました`
-                  )
-                }
-                catch(e) {
-                  const error_message = '『'+String(e) + '』が発生しました';
-                  this.message(error_message, 3)
-                }
-              }
-              else {
-                can_finish_successfully = false;
-              }
-            }
-          }
-        }
-        // myTableにしか載っていないcontentを新規データとしてDBに登録する
-        if (!modified_content_isExist) {
-          // 既に空白チェック済みなので，contentが空白かどうかをみれば，両方が空白かどうかは判断がつく．
-          if (!(modified_data[i][0].trim() === '')) {
-            if (this.data_check(modified_data[i][0], modified_data[i][1])) {
-              try {
-                await addDoc(this.workCollRef, {
-                  content: String(modified_data[i][0]),
-                  price: Number(modified_data[i][1]),        
-                })
-                await saveHistory(this.roomPath, this.user.uid, 
-                  `${this.user.displayName}が${String(modified_data[i][0])}を『お手伝い』に追加しました`
-                )
-              }
-              catch(e) {
-                const error_message = '『'+String(e) + '』が発生しました';
-                this.message(error_message, 3)
-              }
-            }
-            else {
-              can_finish_successfully = false;
-            }
-          }
-        }
-      }
-      return can_finish_successfully;
-    },
-
-    /**
-     * 一括編集機能として，「DB上の保存済みデータにあるが，myTableにないデータを削除する」関数.
-     * @param {Array<Work>} original_data - DB上のWorkに登録されているデータ．
-     * @param {Array<TableRow>} modified_data - myTableに記録されているデータ．
-     */
-    async delete_works_by_myTable(original_data, modified_data) {
-      for (let i = 0; i < original_data.length; i++) {
-        let original_content_isExist = false;
-        for (let j = 0; j < modified_data.length; j++) {
-          if (original_data[i].content === modified_data[j][0]) {
-            original_content_isExist = true;
-          }
-        }
-        //myTableにはなくなっていて，DBにだけ残ってるデータを削除する．
-        if (!original_content_isExist) {
-          const docid = original_data[i].id; 
-          try {
-            await deleteDoc(doc(fireStore, "groups", this.roomPath, "works", docid));
-            await saveHistory(this.roomPath, this.user.uid, 
-              `${this.user.displayName}が${original_data[i].content}を『お手伝い』から削除しました`
-            )
-          }
-          catch(e) {
-            const error_message = '『'+String(e) + '』が発生しました';
-            this.message(error_message, 3)
-          }
-        }
-      }
-    },
-
-    //tableに登録するアイテムの作成 作成は一つずつ
-    async create_item() { 
-      let flag = this.data_check(this.content, this.price)
-      if (flag) {
-        try {
-          await addDoc(this.workCollRef, {
-            content: this.content,
-            price: this.price,        
-          })
-          await saveHistory(this.roomPath, this.user.uid, 
-            `${this.user.displayName}が${this.content}を『お手伝い』に追加しました`
-          )
-        }
-        catch(e) {
-          const error_message = '『'+String(e) + '』が発生しました';
-          this.message(error_message, 3)
-        }
+    async create_item() {
+      const user = await authStateChanged();
+      const result = await create_item(user, 'works', this.content, this.price);
+      if (result.error) {
+        this.message(result.message, 3);
+      } else {
+        this.message(result.message, 1);
+        this.works = await fetch_items(this.workCollRef);
         this.dialog = false;
-        this.content = "";
-        this.price = null;
-        this.fetch_works();
       }
     },
-  
-    //既にtableに登録されているアイテムのうち選択したものを削除
-    async delete_items(){ 
-      let obj = this.selected;
-      for(let key in obj ) {
-        if( obj.hasOwnProperty(key) ) {
-          try {
-            await deleteDoc(doc(fireStore, "groups", this.roomPath, "works", obj[key].id));
-            await saveHistory(this.roomPath, this.user.uid, 
-              `${this.user.displayName}が${obj[key].content}を『お手伝い』から削除しました`
-            )
-          }
-          catch(e) {
-            const error_message = '『'+String(e) + '』が発生しました';
-            this.message(error_message, 3)
-          }
-        }
+    async delete_items() {
+      const result = await delete_items('works', this.selected);
+      if (result.error) {
+        this.message(result.message, 3);
+      } else {
+        this.message(result.message, 1);
+        this.works = await fetch_items(this.workCollRef);
+        this.selected = [];
       }
-      await this.fetch_works();
     },
-    // DBからworksを再取得するための関数(主に，データ更新時に利用する)
-    async fetch_works() {
-      const works_all = await getDocs(this.workCollRef);
-      this.works = [];
-      works_all.forEach(doc => {
-        //ここでworksを更新する =>データがテーブルに反映されるはず
-        try {
-          let data = doc.data();
-          data.id = doc.id;
-          this.works.push(data);
+    async edit_all() {
+      await save_data(this.myTable.getData(), this.works, 'works')
+      .then(async result => {
+        if (result.error) {
+          this.message(result.message, 3);
+        } else {
+          this.message(result.message, 1);
+          this.works = await fetch_items(this.workCollRef);
+          this.dialog_file = false;
         }
-        catch(e) {
-          const error_message = '『'+String(e) + '』が発生しました';
-          this.message(error_message, 3)
-        }
-        
       })
     },
     /**
-     * DBの登録前にcontent(内容)とprice(報酬)の入力内容を簡易的にチェックする関数
-     * @param {String} content - 内容であり，短すぎる（一文字）のものはエラーで変えす．
-     * @param {Number} price - 半角数字のみを許容する．かつ金額の限度は決めてない．
-     * @returns {boolean} - data_checkして問題があればfalseを返す．問題なければtrueを返す． 
+     * store経由でuserにアラートを数秒提示する関数．
+     * @param {string} text - アラートに表示する内容．
+     * @param {number} risk - アラートの色を指定する1が緑,2が黄色,3が赤
      */
-    data_check(content, price) {
-      let flag = true;
-      if (!this.is_written(content, price)) {
-        flag = false;
-        this.$store.commit("addMessage", {
-          text: `記入漏れがあります`,
-          risk: 3,
-        });
-      }
-      else if (!this.is_long(content)) {
-        flag = false;
-        this.$store.commit("addMessage", {
-          text: `内容の説明が短いです`,
-          risk: 3,
-        });
-      }
-      else if (!func.isNumber(price)) {
-        flag = false;
-        this.$store.commit("addMessage", {
-          text: `金額は半角数字で入力してください`,
-          risk: 3,
-        });
-      }
-      return flag
-    },
-    // DBの登録前にcontetnとpriceの入力内容をチェックする関数(data_check内で利用する)
-    is_written(content, price) {
-      let ok = true;
-      if (!content) {
-        ok = false;
-      }
-      if (!price) {
-        ok = false;
-      }
-      return ok;
-    },
-    is_long(content) {
-      let ok = true;
-      if (content.length==1) ok = false;
-      return ok;
-    },
-
-    /**
-     * jspreadSheetでのコンテキストメニューを作る際に内部で使用しているTitle作成関数
-     * @param {string} t - タイトルを書く．e.g. save as や insert new row など
-     * @returns {string} - 正直良く分からん．とりあえず，Titleように変換してくれるっぽい．
-     */
-    T(t) {
-      return jSuites.translate(t);
-    },
+    message(text, risk) {
+      this.$store.commit("addMessage", {text, risk});
+    }
   },
   
 })

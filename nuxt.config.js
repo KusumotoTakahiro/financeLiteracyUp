@@ -27,6 +27,9 @@ export default {
     "@/plugins/firebase.js",
     "@/plugins/myPlugins.js",
     "@/plugins/auth.js",
+    "@/plugins/crudActions.js",
+    "@/plugins/event-bus.js",
+    "@/plugins/typeDefine.js",
   ],
 
   // Auto import components: https://go.nuxtjs.dev/config-components

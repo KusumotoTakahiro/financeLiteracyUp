@@ -25,39 +25,40 @@ import EventBus from '@/plugins/event-bus';
 export async function save_data_by_jspreadsheet(modified_data, original_data, subject) {
   let error = false;
   let message = '';
-  if (check_content_is_duplicate(modified_data)) {
+  const check_duplicate = check_content_is_duplicate(modified_data);
+  const check_brank = check_missing_entries_myTable(modified_data);
+  const check_format = check_format_myTableCells(modified_data);
+  if (check_duplicate) {
     error = true;
     message = '入力に重複する内容が含まれています．';
   }
-  else {
-    //ここに空白チェック関数を入れる．
-    if (check_missing_entries_myTable(modified_data)) {
-      error = true;
-      message = '入力に漏れがあります．'
-    }
-    else {
-      /**
-       * firebaseでユーザーのログイン状態を監視し，結果が格納される．
-       * @type {Object} user 
-       */
-      const user = await authStateChanged();
-      await create_and_update_by_myTable(user, subject, original_data, modified_data)
-      .then(async created_updated => {
-        if (!created_updated.error) {
-          await delete_by_myTable(user, subject, original_data, modified_data)
-          .then(deleted => {
-            if (deleted.error) {
-              error = true;
-              message = deleted.message;
-            }
-          })
-        }
-        error = created_updated.error;
-        message = created_updated.message;
-      })
-    }
+  if (check_brank) {
+    error = true;
+    message = '入力に漏れがあります．'
   }
-  return {error, message};
+  if (check_format.error) {
+    error = true;
+    message = check_format.message;
+  }
+  if (error) {
+    return {error, message}
+  } else {
+    /**
+     * firebaseでユーザーのログイン状態を監視し，結果が格納される．
+     * @type {Object} user 
+     */
+    const user = await authStateChanged();
+    await create_and_update_by_myTable(user, subject, original_data, modified_data)
+    .then(async res => {
+      if (res) error = res
+      else {
+        await delete_by_myTable(user, subject, original_data, modified_data)
+        .then(res => error=res)
+      }
+    })
+    return {error, 'message': '正常に更新しました'};
+  }
+  
 }
 
 
@@ -107,14 +108,39 @@ function check_missing_entries_myTable(modified_data) {
 
 
 /**
+ * テーブル内のcellでそれぞれ形式に問題がないかを確認する関数
+ * @param {TableRow[]} modified_data - table内のデータ
+ * @returns {Object} - cell内の形式に問題があれば，error=false,なければtrueを返す.
+ * trueの場合は追加でmessageを返す.
+ */
+function check_format_myTableCells(modified_data) {
+  for (let i = 0; i < modified_data.length; i++) {
+    /**
+     * 変更後のcontent(仕事名や商品名)
+     * @type {String} modified_content
+     */
+    const modified_content = String(modified_data[i][0]);
+    /**
+     * 変更後のprice（パパ円)
+     * @type {Number} modified_price
+     */
+    const modified_price = Number(modified_data[i][1]);
+    const result = data_check(modified_content, modified_price);
+    if (result.error) {
+      return {'error': true, message: result.message}
+    }
+  }
+  return {'error': false};
+}
+
+
+/**
  * 一括編集機能として，「DB上の保存済みデータとmyTableの差分を新規追加または報酬のみ変更」する関数.
  * @param {Object} user
  * @param {string} subject - 対象がworksなのかshopsなのかfinesなのか．
  * @param {Array<Work>} original_data - DB上のWorkに登録されているデータ．
  * @param {Array<TableRow>} modified_data - myTableに記録されているデータ．
- * @returns {Object} - data_check()の結果とmessageを返す.
- * @property {Boolean} can_finish_successfully - 問題なければTrue，あればFalse
- * @property {string} message - ユーザ向けの通知文
+ * @returns {Boolean} - 正常に終了すればTrue，しなければFalseを返す.
  */
 async function create_and_update_by_myTable(user, subject, original_data, modified_data) {
   /**
@@ -122,11 +148,6 @@ async function create_and_update_by_myTable(user, subject, original_data, modifi
    * @type {Boolean} error
    */
   let error = false;
-  /**
-   * ユーザ向けの通知文
-   * @type {string} message
-   */
-  let message = '正常に更新しました';
   for (let i = 0; i < modified_data.length; i++) {
     /**
      * 変更後のcontent(仕事名や商品名)
@@ -154,41 +175,31 @@ async function create_and_update_by_myTable(user, subject, original_data, modifi
        * @type {Number} original_price 
        */
       const original_price = Number(original_data[j].price);
-
-      // modified_contentがもともと有ったcontentなのかを調べている．
+      // modified_contentがもともとあったcontentなのかを調べている．
       if (modified_content === original_content) {
         modified_content_isExist = true;
         // priceのみが変更されている場合.それ以外はそのまま．
         if (original_price !== modified_price) {
-          const result = data_check(original_content, modified_price)
-          if (!result.error) {
-            await update_item(user, subject, original_data[j].id, original_content, modified_price);
-          }
-          else {
-            error = true;
-            message = result.message;
-            break;
-          }
+          await update_item(user, subject, original_data[j].id, original_content, modified_price)
+          .then(result => {
+            if (result) error = true;
+          })
         }
       }
     }
     // myTableにしか載っていないcontentを新規データとしてDBに登録する
     if (!modified_content_isExist) {
-      // 既に空白チェック済みなので，contentが空白かどうかをみれば，両方が空白かどうかは判断がつく．
+      // 空白チェック済みのため，両方空白か両方埋まってるかのどちらかしかない．
+      // ⇩そのため，両方空白かは片方確認するだけで済んでいる
       if (!(modified_content.trim() === '')) {
-        const result = data_check(modified_content, modified_price);
-        if (!result.error) {
-          await create_item(user, subject, modified_content, modified_price);
-        }
-        else {
-          error = true;
-          message = result.message;
-          break;
-        }
+        await create_item(user, subject, modified_content, modified_price)
+        .then(result => {
+          if (result.error) error = true;
+        })
       }
     }
   }
-  return {error, message};
+  return error;
 }
 
 
@@ -199,17 +210,21 @@ async function create_and_update_by_myTable(user, subject, original_data, modifi
  * @param {String} subject - 現在変更対象のDB上のcollection(WorksやShopなど)
  * @param {Number} newPrice - 更新する（修正する金額）
  * @param {String} nowContent - 更新対象のcontent
+ * @returns {boolean} - 正常に更新できたかをerrorフラグで返す.
  */
 async function update_item(user, subject, docid, nowContent, newPrice) {
+  let error = false;
   try {
     await getContentDocRef(user, subject, docid)
     .then(docRef => {
-      updateDoc(docRef, { price: newPrice })
+      updateDoc(docRef, { price: Number(newPrice) })
     })
   }
   catch(e) {
+    error = true;
     const error_message = '『'+String(e) + '』が発生しました';
   }
+  return error;
 }
 
 
@@ -219,6 +234,8 @@ async function update_item(user, subject, docid, nowContent, newPrice) {
  * @param {string} subject 
  * @param {string} newContent 
  * @param {number} newPrice 
+ * @returns {Object} - errorがあればtrue,なければfalseを返す．
+ * また，messageも合わせて返す.
  */
 export async function create_item(user, subject, content, price) {
   let error = false;
@@ -233,7 +250,6 @@ export async function create_item(user, subject, content, price) {
     }
     catch(e) {
       error = true;
-      console.log(e);
       message = '『'+String(e) + '』が発生しました';
     }
   } else {
@@ -250,13 +266,10 @@ export async function create_item(user, subject, content, price) {
  * @param {string} subject - works, shops, fines など
  * @param {Array<Work>} original_data - DB上のWorkに登録されているデータ．
  * @param {Array<TableRow>} modified_data - myTableに記録されているデータ．
- * @returns {Object}
- * @property {boolean} error
- * @property {string} message
+ * @returns {boolean} errorの有無を返す．errorがあればtrue,なければfalse
  */
 async function delete_by_myTable(user, subject, original_data, modified_data) {
   let error = false;
-  let message = '';
   for (let i = 0; i < original_data.length; i++) {
     /**
      * もともとDBにあったデータが変更後のJspreadSheetに残っているか．
@@ -277,12 +290,12 @@ async function delete_by_myTable(user, subject, original_data, modified_data) {
         })
       }
       catch(e) {
-        message = '『'+String(e) + '』が発生しました';
+        const message = '『'+String(e) + '』が発生しました';
         error = true;
       }
     }
   }
-  return {error, message};
+  return error;
 }
 
 
@@ -355,9 +368,11 @@ export async function fetch_items(collectionReference) {
  * content，priceの記入漏れチェック,
  * contentが1文字でないか,
  * 金額入力時の半角チェックを行う関数
- * @param {String} content - 内容であり，短すぎる（一文字）のものはエラーで変えす．
- * @param {Number} price - 半角数字のみを許容する．かつ金額の限度は決めてない．
- * @returns {Object} - 問題なければerror=falseを返す．問題があればerror=trueを返す． 
+ * @param {string} content - 内容であり，短すぎる（一文字）のものはエラーで変えす．
+ * @param {number} price - 半角数字のみを許容する．かつ金額の限度は決めてない．
+ * @returns {Object} - errorの有無をbooleanで返す.また，error=trueの時はmessageも返す
+ * @property {boolean} error - 問題なければfalse，あればtrueを返す．
+ * @property {string} message - error=trueの時にerror内容を返す.
  */
 function data_check(content, price) {
   let error = false;
@@ -379,17 +394,20 @@ function data_check(content, price) {
 
 
 /**
- * DBの登録前にcontetnとpriceの入力内容をチェックする関数
- * @param {String} content 
- * @param {Number} price 
+ * DBの登録前にcontetnとpriceのどちからの入力が空白でないかを確認する関数．
+ * 片方が空白の時のみfalseを返す．両方が空白または記入済みの場合はtrueを返す．
+ * @param {string} content
+ * @param {number} price 
  * @returns {boolean} - 記入漏れがないかをtrue,falseで返す
  */
 function is_written(content, price) {
   let ok = true;
-  if (!content) {
+  const content_is_brank =  content.trim() === '';
+  const price_is_brank = String(price).trim() === '0';
+  if (!content_is_brank && price_is_brank) {
     ok = false;
   }
-  if (!price) {
+  if (content_is_brank && !price_is_brank) {
     ok = false;
   }
   return ok;
@@ -456,12 +474,19 @@ function Ebus(bus_name, data_for_sending) {
  * @param {string} subject - worksやshopsなどのカテゴリー．
  * @return {JspreadSheet} - myTable（JspreadSheetオブジェクト）を返す
  */
-export function create_myTable(datas_from_DB, table_columns, subject) {
+export function create_myTable(datas_from_DB, table_columns) {
   //datas_from_DBからmyTable_dataを形成(または,再形成)
   let table_data = [];
   for (let i = 0; i < datas_from_DB.length; i++) {
     const item = datas_from_DB[i];
     table_data.push([item.content, item.price]);
+  }
+  const limitNum = 5;  //初期行数分の初期化
+  if (datas_from_DB.length < limitNum) {
+    const len = limitNum - datas_from_DB.length;
+    for (let i = 0; i < len; i++) {
+      table_data.push(['', undefined]);
+    }
   }
   const id = 'mytable';
   const myTable = jspreadsheet(document.getElementById(id), {
@@ -473,7 +498,15 @@ export function create_myTable(datas_from_DB, table_columns, subject) {
     toolbar: [
       {type: 'i', content: 'undo', onclick: ()=>myTable.undo()},
       {type: 'i', content: 'redo', onclick: ()=>myTable.redo()},
-      {type: 'i', content: 'save', onclick: ()=>Ebus('res', 'save')},
+      {type: 'i', content: 'save', onclick: ()=> {
+          console.log('save')
+          const result = {
+            'data': myTable.getData(),
+            'type': 'save'
+          }
+          Ebus('res', result);
+        }
+      },
       {type: 'i', content: 'close', onclick: ()=>Ebus('res', 'close')},
     ]
   });

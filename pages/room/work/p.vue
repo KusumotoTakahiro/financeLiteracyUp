@@ -212,7 +212,7 @@ export default ({
         }, 
       ],
       works: [], // DBから取得した全データを格納.
-      myTable: null, // 一括修正時のデータを一時的に格納.
+      myTableData: [], // 一括修正時のデータを一時的に格納.
     }
   },
   async mounted() {
@@ -240,9 +240,12 @@ export default ({
       this.message('ログインしてください', 3);
       this.$router.push('/');
     }
-    EventBus.$on('res', res => {
+    EventBus.$on('res', async res => {
       if (res==='close') this.dialog_file = false;
-      else if (res==='save') this.edit_all();
+      else if (res.type==='save') {
+        this.myTableData = res.data;
+        await this.edit_all();
+      }
     });
   },
   computed: {
@@ -264,9 +267,7 @@ export default ({
       //以下のようにsetTimeOutで時間差を作っている．
       setTimeout(() => {
         clear_myTable();  //myTableの初期化
-        //jspreadsheetに転記
-        const myTable = create_myTable(this.works, this.columns, 'works');
-        this.myTable = myTable;
+        create_myTable(this.works, this.columns);
       }, 100)
     },
     async create_item() {
@@ -281,17 +282,22 @@ export default ({
       }
     },
     async delete_items() {
-      const result = await delete_items('works', this.selected);
-      if (result.error) {
-        this.message(result.message, 3);
-      } else {
-        this.message(result.message, 1);
-        this.works = await fetch_items(this.workCollRef);
-        this.selected = [];
-      }
+      await delete_items('works', this.selected)
+      .then(async result => {
+        if (result.error) {
+          this.message(result.message, 3);
+        } else {
+          this.message(result.message, 1);
+          this.works = await fetch_items(this.workCollRef);
+          this.selected = [];
+        }
+      })
     },
     async edit_all() {
-      await save_data(this.myTable.getData(), this.works, 'works')
+      console.log('edit_all')
+      console.log(this.myTableData)
+      // myTableのデータを非同期に更新できてない．同期的に取れてるかも不明
+      await save_data(this.myTableData, this.works, 'works')
       .then(async result => {
         if (result.error) {
           this.message(result.message, 3);

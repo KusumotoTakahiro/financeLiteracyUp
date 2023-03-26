@@ -10,22 +10,7 @@
         elevation="10"
         :width="$vuetify.breakpoint.width-50"
       >
-        <div class="header">
-          <v-alert 
-            class="
-              text-center 
-              text-h6
-              my-0
-              bg-grad
-              lime--text
-              text-ligten-3
-              "
-            border="bottom"
-						colored-border
-						color="blue accent-5"
-						elevation="2"> 現在のお手伝い一覧 
-          </v-alert>
-        </div>
+        <page-header title="現在のお手伝い一覧" />
         <div class="main mb-10 mt-10">
           <v-data-table
             v-model="selected"
@@ -83,63 +68,12 @@
         </v-card>
       </v-dialog>
       <!-- 個別追加 -->
-      <v-dialog
-        v-model="dialog"
-        outlined
-        hide-overlay
-        max-width="600"
-        content-class="rounded-lg elevation-2"
-        transition="dialog-bottom-transition"
-      >
-        <v-card 
-          class="py-5"
-          elevation="7"
-          outlined
-          shaped
-        >
-          <v-card-title class="justify-center">お手伝い追加</v-card-title>
-          <v-card-text>
-            <template>
-              <div>
-                <div class="form-header">内容</div>
-                <v-text-field
-                  v-model="content"
-                  clearable
-                  placeholder="お手伝いの内容を記入してください"
-                  dense
-                  outlined
-                  type="text"
-                  class="input_case"
-                ></v-text-field>
-              </div>
-              <div>
-                <div class="form-header">報酬</div>
-                <v-text-field
-                  v-model="price"
-                  clearable
-                  dense
-                  outlined
-                  type="tel"
-                  class="input_case"
-                ></v-text-field>
-                <v-btn
-                  class="black--text mt-5"
-                  block
-                  height="40"
-                  color=""
-                  @click="create_item()"
-                >登録</v-btn>
-              </div>
-            </template>
-          </v-card-text>
-          <v-card-actions class="justify-end">
-            <v-btn
-              text
-              @click="dialog = false"
-            >Close</v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
+      <add-one 
+        :dialog='dialog'
+        subject='works'
+        :subjectCollRef='workCollRef'
+        @compAddOne='compAddOne'
+      ></add-one>
     </v-col>
   </v-row>
 </template>
@@ -248,6 +182,10 @@ export default ({
       }
     });
   },
+  beforeDestroy() {
+    console.log('beforeDestroy');
+    EventBus.$off('res');
+  },
   computed: {
 		width: function() {
 			return this.$vuetify.breakpoint.width/5*4;
@@ -270,16 +208,10 @@ export default ({
         create_myTable(this.works, this.columns);
       }, 100)
     },
-    async create_item() {
-      const user = await authStateChanged();
-      const result = await create_item(user, 'works', this.content, this.price);
-      if (result.error) {
-        this.message(result.message, 3);
-      } else {
-        this.message(result.message, 1);
-        this.works = await fetch_items(this.workCollRef);
-        this.dialog = false;
-      }
+    compAddOne(data) {
+      console.log(data);
+      this.dialog = data.dialog;
+      this.works = data.items;
     },
     async delete_items() {
       await delete_items('works', this.selected)

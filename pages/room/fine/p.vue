@@ -10,23 +10,7 @@
         elevation="10"
         :width="$vuetify.breakpoint.width-50"
       >
-        <div class="header">
-					<v-alert 
-						class="
-							text-center
-							text-h6
-							my-0
-							bg-grad
-							lime--text
-							text--lighten-3
-							"
-						border="bottom"
-						colored-border
-						color="blue accent-5"
-						elevation="2"
-					> 現在の罰則一覧
-					</v-alert>
-				</div>
+        <page-header title="現在の罰則一覧"></page-header>
         <div class="main mb-10 mt-10">
           <v-data-table
             v-model="selected"
@@ -44,8 +28,8 @@
             align-content="center"
             justify="space-around"
           >
-            <v-btn class="mx-auto mb-1" width="7rem" @click="dialog_2=true">
-              一括追加
+            <v-btn class="mx-1 mb-1" width="7rem" @click="change_data_file">
+              一括編集
             </v-btn>
             <v-btn class="mx-auto mb-1" width="7rem" @click="dialog=true">
               追加
@@ -61,13 +45,12 @@
           </v-row>
         </div>
       </v-card>
+      
+      <!-- 一括編集 -->
       <v-dialog
-        v-model="c_dialog_2"
-        outlined
-        hide-overlay
-        :height="$vuetify.breakpoint.height"
+        v-model="dialog_file"
+        persistent
         max-width="600"
-        content-class="rounded-lg elevation-2"
         transition="dialog-bottom-transition"
       >
         <v-card 
@@ -76,258 +59,66 @@
           outlined
           shaped
         >
-          <v-card-title class="justify-center">確認・修正</v-card-title>
-          <v-card-text>
-            <template>
-              <v-data-table
-                :headers="headers"
-                :items="new_csv"
-                item-key="id"
-                class="elevation-0"
-                fixed-header
-                hide-default-header
-              >
-                <template v-slot:item.content="props">
-                  <v-edit-dialog
-                    :return-value.sync="props.item.content"
-                    persistent
-                    style="height:auto"
-                    large
-                    @save="save"
-                    @cancel="cancel"
-                    @open="open"
-                    @close="close"
-                  >
-                    <div>{{ props.item.content }}</div>
-                    <template v-slot:input>
-                      <div class="mt-4 text-body-1 text-center">
-                        罰則を変更
-                      </div>
-                      <v-text-field
-                        v-model="props.item.content"
-                        label="Edit"
-                        single-line
-                        autofocus
-                        class="input_case2 text-center"
-                      ></v-text-field>
-                    </template>
-                  </v-edit-dialog>
-                </template>
-                <template v-slot:item.price="props">
-                  <v-edit-dialog
-                    :return-value.sync="props.item.price"
-                    persistent
-                    style="height:auto"
-                    large
-                    @save="save"
-                    @cancel="cancel"
-                    @open="open"
-                    @close="close"
-                  >
-                    <div>{{ props.item.price }}</div>
-                    <template v-slot:input>
-                      <div class="mt-4 text-body-1 text-center">
-                        罰金を変更
-                      </div>
-                      <v-text-field
-                        v-model="props.item.price"
-                        label="Edit"
-                        single-line
-                        counter
-                        autofocus
-                        type="Number"
-                        class=" text-center"
-                        style="font-family: serif;"
-                      ></v-text-field>
-                    </template>
-                  </v-edit-dialog>
-                </template>
-              </v-data-table>
-              <div>  
-                <v-btn
-                  class="black--text mt-0"
-                  block
-                  height="40"
-                  color=""
-                  @click="create_items_from_csv()"
-                >登録</v-btn>
-              </div>
-            </template>
+          <v-card-title class="justify-center">一括編集</v-card-title>
+          <v-card-text 
+            class="
+            d-flex
+            justify-center
+            mx-auto
+          ">
+            <div id="mytable"></div>
           </v-card-text>
-          <v-card-actions >
-          <v-row justify="space-between">
-            <v-btn
-              style="font-size: 0.5rem"
-              text
-              disabled
-            >encoding: {{encoding}} to Unicode</v-btn>
-            <v-btn
-              text
-              @click="c_dialog_2 = false"
-              class="mr-3"
-            >Close</v-btn>
-          </v-row>
-          </v-card-actions>
         </v-card>
       </v-dialog>
-      <v-dialog
-        v-model="dialog_2"
-        outlined
-        hide-overlay
-        :height="$vuetify.breakpoint.height"
-        max-width="600"
-        content-class="rounded-lg elevation-2"
-        transition="dialog-bottom-transition"
-      >
-        <v-card 
-          class="py-5"
-          elevation="7"
-          outlined
-          shaped
-        >
-          <v-card-title class="justify-center">CSVから一括追加</v-card-title>
-          <v-card-text>
-            <template>
-              <div>
-                <v-file-input
-                  id="file"
-                  ref="file"
-                  show-size
-                  accept=".csv"
-                  @change="onFileChange"
-                  @click:clear="csv_data=null"
-                  label="csvファイルを入力してください"
-                ></v-file-input>
-              </div>
-              <div>  
-                <v-btn
-                  :disabled="disabled"
-                  class="black--text mt-5"
-                  block
-                  height="40"
-                  color=""
-                  @click="check_csv()"
-                >CSVから登録</v-btn>
-              </div>
-              <div>  
-                <v-btn
-                  class="black--text mt-5"
-                  block
-                  height="40"
-                  color=""
-                  @click="download_format()"
-                >フォーマットのダウンロード</v-btn>
-              </div>
-            </template>
-          </v-card-text>
-          <v-card-actions class="justify-end">
-            <v-btn
-              text
-              @click="dialog_2 = false"
-            >Close</v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
-      <v-dialog
-        v-model="dialog"
-        :height="$vuetify.breakpoint.height"
-        max-width="600"
-        hide-overlay
-        outlined
-        content-class="rounded-lg elevation-0"
-        transition="dialog-bottom-transition"
-      >
-        <v-card 
-          class="py-5"
-          elevation="7"
-          outlined
-          shaped
-        >
-          <v-card-title class="justify-center">罰則項目追加</v-card-title>
-          <v-card-text>
-            <template>
-              <div>
-                <div class="form-header">内容</div>
-                <v-text-field
-                  v-model="content"
-                  clearable
-                  placeholder="罰則の内容を記入してください"
-                  dense
-                  color=""
-                  outlined
-                  type="text"
-                  hide-details=""
-                  class="input_case"
-                ></v-text-field>
-              </div>
-              <div>
-                <div class="form-header">罰金</div>
-                <v-text-field
-                  v-model="price"
-                  clearable
-                  dense
-                  color=""
-                  outlined
-                  type="tel"
-                  hide-details=""
-                  class="input_case"
-                ></v-text-field>
-                <v-btn
-                  class="black--text mt-5"
-                  block
-                  height="40"
-                  color=""
-                  @click="create_item()"
-                >登録</v-btn>
-              </div>
-            </template>
-          </v-card-text>
-          <v-card-actions class="justify-end">
-            <v-btn
-              text
-              @click="dialog = false"
-            >Close</v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
+
+      <!-- 個別追加 -->
+      <add-one 
+        :dialog='dialog'
+        subject='fines'
+        :subjectCollRef='fineCollRef'
+        @compAddOne='compAddOne'
+      ></add-one>
       
     </v-col>
   </v-row>
 </template>
 <script>
-import { getAuth } from "firebase/auth";
-import * as func from "~/plugins/myPlugins";
 import {
   collection,
   doc,
-  setDoc,
-  updateDoc,
   getDoc,
-  getDocs,
-  addDoc,
-  deleteDoc,
 } from "firebase/firestore";
 import {
   fireStore,
 } from "~/plugins/firebase";
 import {
   authStateChanged,
-  saveHistory,
 } from '@/plugins/auth'
-import Encoding from  'encoding-japanese';
+import '@/plugins/typeDefine'
+import {
+  save_data_by_jspreadsheet as save_data,
+  create_item,
+  delete_items,
+  fetch_items,
+  clear_myTable,
+  create_myTable
+} from '~/plugins/crudActions';
+import EventBus from "~/plugins/event-bus";
 
 export default ({
   name: 'fineParentPage',
   layout: "default",
 
+  head: {
+    link: [
+      {rel: "stylesheet", href: "https://fonts.googleapis.com/css?family=Material+Icons"}
+    ]
+  },
+
   data() {
     return {
       dialog: false,
-      dialog_2: false,
-      c_dialog_2: false,
-      main_dialog: true,
-      csv_data: null,
-      new_csv:[],
+      dialog_file: false,
       content: "",
       price: null,
       isLogin: false,
@@ -347,12 +138,24 @@ export default ({
           value: 'price'
         }
       ],
-      fines: []
+      columns: [
+        { 
+          type: 'text',
+          title: '罰則',
+          width: 250
+        },
+        { 
+          type: 'numeric',
+          title: '罰金',
+          width: 200,
+        }, 
+      ],
+      fines: [],
+      myTableData: []
     }
   },
   async mounted() {
     let user = await authStateChanged();
-    console.log(user);
     if (user.uid) {
       this.isLogin=true;
       this.user = user;
@@ -366,274 +169,81 @@ export default ({
         this.fineCollRef = fineCollRef;
         
         //参照の中からfinesを取得して，fines(collection)の中のdocumentを全取得
-        const fines_all = await getDocs(fineCollRef);
-        console.log(fines_all)
-        fines_all.forEach(doc => {
-          //ここでfinesを更新する =>データがテーブルに反映されるはず
-          let data = doc.data();
-          data.id = doc.id;
-          this.fines.push(data);
-        })
+        this.fines = await fetch_items(fineCollRef)
       }
       catch(error) {
-        console.log(error);
+        this.message('『'+String(e) + '』が発生しました', 3)
       }
     }
     else {
-      this.$store.commit("addMessage", {
-        text: "ログインしてください",
-        risk: 3, 
-      })
+      this.message('ログインしてください', 3)
       this.$router.push('/');
     }
+    EventBus.$on('res', async res => {
+      if (res==='close') this.dialog_file = false;
+      else if (res.type==='save') {
+        this.myTableData = res.data;
+        await this.edit_all();
+      }
+    });
+  },
+  beforeDestroy() {
+    console.log('beforeDestroy');
+    EventBus.$off('res');
   },
   computed: {
     width: function() {
       return this.$vuetify.breakpoint.width/5*4;
     },
-    disabled: function() {
-      return this.csv_data===null? true : false;
-    }
   },
   methods: {
     goToHome() {
       this.$router.push('/room')
     },
-    async create_item() { //tableに登録するアイテムの作成
-      let flag = true;
-      if (!this.is_written(this.content, this.price)) {
-        flag = false;
-        this.$store.commit("addMessage", {
-          text: `記入漏れがあります`,
-          risk: 3,
-        });
-      }
-      else if (!this.is_long(this.content)) {
-        flag = false;
-        this.$store.commit("addMessage", {
-          text: `内容の説明が短いです`,
-          risk: 3,
-        });
-      }
-      if (flag) {
-        try {
-          await addDoc(this.fineCollRef, {
-            content: this.content,
-            price: this.price,        
-          })
-          await saveHistory(this.roomPath, this.user.uid, 
-            `${this.user.displayName}が${this.content}を『罰則』に追加しました`
-          )
-        }
-        catch(error) {
-          console.log('create_item error');
-          console.log(error);
-        }
-        this.dialog = false;
-        this.content = "";
-        this.price = null;
-        this.fetch_fines();
-      }
+    change_data_file() {
+      this.dialog_file = true;
+      setTimeout(() => {
+        clear_myTable();  //myTableの初期化
+        create_myTable(this.fines, this.columns);
+      }, 100)
     },
-    async delete_items(){ //既にtableに登録されているアイテムのうち選択したものを削除
-      let obj = this.selected;
-      for(let key in obj ) {
-        if( obj.hasOwnProperty(key) ) {
-          try {
-            await deleteDoc(doc(fireStore, "groups", this.roomPath, "fines", obj[key].id));
-            await saveHistory(this.roomPath, this.user.uid, 
-              `${this.user.displayName}が${obj[key].content}を『罰則』から削除しました`
-            )
-          }
-          catch(error) {
-            console.log(error)
-          }
-        }
-      }
-      await this.fetch_fines();
+    compAddOne(data) {
+      console.log(data);
+      this.dialog = data.dialog;
+      this.fines = data.items;
     },
-    async fetch_fines() {
-      console.log('fetch_fines')
-      const fines_all = await getDocs(this.fineCollRef);
-      this.fines = [];
-      fines_all.forEach(doc => {
-        //ここでfinesを更新する =>データがテーブルに反映されるはず
-        try {
-          let data = doc.data();
-          data.id = doc.id;
-          this.fines.push(data);
-          console.log(data);
+    async delete_items() {
+      await delete_items('fines', this.selected)
+      .then(async result => {
+        if (result.error) {
+          this.message(result.message, 3);
+        } else {
+          this.message(result.message, 1);
+          this.fines = await fetch_items(this.fineCollRef);
+          this.selected = [];
         }
-        catch(error) {
-          console.log(error);
-        }
-        
       })
     },
-    is_written(content, price) {
-      let ok = true;
-      if (!content) {
-        ok = false;
-      }
-      if (!price) {
-        ok = false;
-      }
-      return ok;
-    },
-    is_long(content) {
-      let ok = true;
-      if (content.length==1) ok = false;
-      return ok;
-    },
-    download_format() {
-      console.log('format_download');
-      //文字列型の二次元配列データ
-      const data = [
-        ["content", "price"],
-        ["嘘をつく（例）", "80"],
-        ["22時に寝ない（例）", "100"]
-      ]
-
-      //作った二次元配列をCSV文字列に直す．
-      let csv_string = "";
-      for (let d of data) {
-        csv_string += d.join(",");
-        csv_string += '\r\n';
-      }
-
-      //ファイル名
-      const file_name = "format.csv";
-
-      //BOMを作る これをしないと文字化けした
-      var bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
-
-      //CSVのバイナリデータを作る
-      const blob = new Blob([bom, csv_string], {type: "text/csv"});
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.download = file_name;
-      link.href = url;
-      link.click(); //リンクをクリックしたことにする．
-      URL.revokeObjectURL(link.href); //リンクに当てられたメモリを開放する
-    },
-
-    //現在のCSVデータに記入ミスがないかを確認表示する関数
-    check_csv() {
-      console.log('check_csv');
-      const vm = this;
-      vm.new_csv = []; //前のデータを空にする
-      this.c_dialog_2 = true;
-      //登録の際の記入ミスがないかをチェック
-      vm.csv_data.forEach((data, index) => {
-        if (!this.is_written(data.content, data.price)) {
-          this.$store.commit("addMessage", {
-            text: `${index+1}行目に記入漏れがあります`,
-            risk: 3,
-          });
+    async edit_all() {
+      await save_data(this.myTableData, this.fines, 'fines')
+      .then(async result => {
+        if (result.error) {
+          this.message(result.message, 3);
+        } else {
+          this.message(result.message, 1);
+          this.fines = await fetch_items(this.fineCollRef);
+          this.dialog_file = false;
         }
-        else if (!this.is_long(data.content)) {
-          this.$store.commit("addMessage", {
-            texat: `${index+1}行目の内容の説明が短いです`,
-            risk: 3,
-          });
-        }
-        data.id = index;
-        this.new_csv.push(data);
       })
     },
-
-    //最終的に，「登録する」ボタンを押すと実行される
-    async create_items_from_csv() {
-      console.log('create_items_from_csv');
-      let vm = this;
-      const data = vm.new_csv;
-      const length = data.length;
-      //本来は誤操作防止のため，dialogはあとで閉じたほうがいいが，
-      this.c_dialog_2 = false;
-      this.dialog_2 = false;
-      //DBへの登録が先だとブラウザ側で少しタイムラグになるので，先にdialogを閉じる.
-      for (let i = 0; i < length; i++) {
-        await this.create_item_for_csv(data[i].content, data[i].price);
-      }
-      this.fetch_fines();
-    },
-    //create_items_from_csv内で実行される関数
-    async create_item_for_csv(content, price) { 
-      console.log('create_item_for_csv');
-      console.log(content, price);
-      try {
-        await addDoc(this.fineCollRef, {
-          content: String(content),
-          price: Number(price),        
-        })
-        await saveHistory(this.roomPath, this.user.uid, 
-          `${this.user.displayName}が${content}を『罰則』に追加しました`
-        )
-      }
-      catch(error) {
-        console.log('create_item error');
-        console.log(error);
-      }
-      this.new_csv = []; //登録終わったので空にする
-    },
-    //fileがUploadされたときにcsv_dataを更新する(csv_dataを取り込む)
-    onFileChange(file) {
-      const vm = this;
-      if (file) {
-        if (file.name.indexOf('.csv') > -1) {
-          vm.get_csv_data(file)
-          .then(vm.process_csv_data)
-        }
-      }
-      else {
-        console.log('not in file');
-      }
-    },
-    get_csv_data(file) {
-      return new Promise((resolve, reject) => {
-        console.log('get_csv_data');
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          //uint8arrayにより数値配列に変換できる．＝＞detect()で扱える形になるから嬉しいってこと．
-          let codes = new Uint8Array(e.target.result);
-          let encoding = Encoding.detect(codes);
-          let unicodeString = Encoding.convert(codes, {
-            to: 'unicode',
-            from: encoding,
-            type: 'string'
-          })
-          this.encoding = encoding;
-          resolve(unicodeString.split(/\r\n|\n/)) 
-        };
-        reader.onerror = () => reject(error);
-        reader.readAsArrayBuffer(file); //これはfileの中身をbinaryのまま扱えるようにする関数
-        //reader.readAsText(file); //これはfileの中身をstring型で扱えるようにする関数
-      })
-    },
-    //fileReaderの読み込んだファイルを扱えるデータとして読み込む処理.
-    process_csv_data(res) {
-      console.log('process_csv_data');
-      let vm = this;
-      let result = res;
-      //let header = result[0].split(',')
-      //理由はわからないが，上記だと文字が表示されない
-      let header = ['content', 'price']; 
-      result.shift(); //headerの部分を削除
-      result.pop(); //最後に不要な空白が残っているのでその部分を削除
-      vm.csv_data = result.map(item=>{
-        let datas = item.split(',');
-        let temp = {};
-        for (const index in datas) {
-          let key = header[index];
-          temp[key] = datas[index];
-        }
-        return temp;
-      })
-    },
-    save() {console.log('save')},
-    cancel() {},
-    open() {},
-    close() {},
+    /**
+     * store経由でuserにアラートを数秒提示する関数．
+     * @param {string} text - アラートに表示する内容．
+     * @param {number} risk - アラートの色を指定する1が緑,2が黄色,3が赤
+     */
+    message(text, risk) {
+      this.$store.commit("addMessage", {text, risk});
+    }
   }
 })
 </script>

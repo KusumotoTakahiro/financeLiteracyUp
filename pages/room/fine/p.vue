@@ -32,16 +32,14 @@
               一括編集
             </v-btn>
             <v-btn class="mx-auto mb-1" width="7rem" @click="dialog=true">
-              追加
+              項目追加
             </v-btn>
             <v-btn class="mx-auto mb-1" width="7rem" @click="delete_items()">
-              削除
+              項目削除
             </v-btn>
-            <v-btn
-              class="mx-auto mb-1"
-              width="7rem"
-              @click="goToHome()"
-            >Homeに戻る</v-btn>
+            <v-btn class="mx-auto mb-1" width="7rem" @click="goToHome()" >
+              Home
+            </v-btn>
           </v-row>
         </div>
       </v-card>

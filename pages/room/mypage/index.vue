@@ -67,7 +67,7 @@
             </v-row>
           </div>
           <!-- dividerにwidthを付けると変にレイアウトが崩れない -->
-          <v-divider  ></v-divider>
+          <!-- <v-divider  ></v-divider>
           <div>
             <div class="form-header text-center mt-5">ユーザ名の変更</div>
             <v-text-field
@@ -106,7 +106,7 @@
                 @click="reget_uname()"
               > 元に戻す </v-btn>
             </v-row>
-          </div>
+          </div> -->
           <!-- dividerにwidthを付けると変にレイアウトが崩れない -->
           <v-divider ></v-divider>
           <!-- 壁紙設定 -->

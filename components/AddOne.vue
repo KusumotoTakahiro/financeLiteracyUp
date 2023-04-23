@@ -97,8 +97,8 @@ export default ({
         this.message(result.message, 3);
       } else {
         this.message(result.message, 1);
-        const works = await fetch_items(this.subjectCollRef);
-        this.$emit('compAddOne', {items: works, dialog: false});
+        const items = await fetch_items(this.subjectCollRef);
+        this.$emit('compAddOne', {items: items, dialog: false});
       }
     },
     /**

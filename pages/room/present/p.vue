@@ -10,51 +10,65 @@
         elevation="10"
         :width="$vuetify.breakpoint.width-50"
       >
-      <div class="header">
-        <v-alert 
-          class="
-            text-center 
-            text-h6
-            my-0
-            bg-grad
-            lime--text
-            text-ligten-3
-            "
-          border="bottom"
-          colored-border
-          color="blue accent-5"
-          elevation="2"> 現在のご褒美一覧 
-        </v-alert>
-      </div>
-      <div class="main mb-10 mt-10">
-        <v-data-table
-          v-model="selected"
-          :headers="headers"
-          :items="presents"
-          :single-select="false"
-          item-key="id"
-          show-select
-          class="elevation-0"
-          fixed-header
-          :height="$vuetify.breakpoint.height-210"
-        ></v-data-table>
-        <v-row
-          class="mt-3 mb-3 mx-auto"
-          align-content="center"
-          justify="space-around"
-        >
-          <v-btn class="mx-auto mb-1" width="7rem" @click="dialog=true">
-            追加
-          </v-btn>
-          <v-btn class="mx-auto mb-1" width="7rem" @click="delete_items()">
-            削除
-          </v-btn>
-          <v-btn class="mx-auto mb-1" width="7rem" @click="goToHome()">
-            Homeに戻る
-          </v-btn>
-        </v-row>
-      </div>
+        <page-header title="現在のご褒美一覧"></page-header>
+        <div class="main mb-10 mt-10">
+          <v-data-table
+            v-model="selected"
+            :headers="headers"
+            :items="presents"
+            :single-select="false"
+            item-key="id"
+            show-select
+            class="elevation-0"
+            fixed-header
+            :height="$vuetify.breakpoint.height-210"
+          ></v-data-table>
+          <v-row
+            class="mt-3 mb-3 mx-auto"
+            align-content="center"
+            justify="space-around"
+          >
+            <v-btn class="mx-1 mb-1" width="7rem" @click="change_data_file">
+              一括編集
+            </v-btn>
+            <v-btn class="mx-auto mb-1" width="7rem" @click="dialog=true">
+              追加
+            </v-btn>
+            <v-btn class="mx-auto mb-1" width="7rem" @click="delete_items()">
+              削除
+            </v-btn>
+            <v-btn class="mx-auto mb-1" width="7rem" @click="goToHome()">
+              Home
+            </v-btn>
+          </v-row>
+        </div>
       </v-card>
+      <!-- 一括編集のダイアログ -->
+      <v-dialog
+        v-model="dialog_file"
+        persistent
+        max-width="750"
+        transition="dialog-bottom-transition"
+      >
+        <v-card 
+          class="py-5"
+          elevation="7"
+          outlined
+          shaped
+        >
+          <v-card-title class="justify-center">一括編集</v-card-title>
+          <v-card-text 
+            class="
+            d-flex
+            justify-center
+            mx-auto
+          ">
+            <div id="mytable"></div>
+          </v-card-text>
+        </v-card>
+      </v-dialog>
+
+      <!-- 個別追加 -->
       <v-dialog
         v-model="dialog"
         :height="$vuetify.breakpoint.height"
@@ -171,16 +185,31 @@ import {
   authStateChanged,
   saveHistory,
 } from '@/plugins/auth'
-import { fromStringWithSourceMap } from "source-list-map";
+import {
+  save_data_by_jspreadsheet_for_presents as save_data,
+  create_myTable,
+  clear_myTable,
+  delete_items,
+  create_item_for_presents,
+  fetch_items,
+  fetch_children
+} from '~/plugins/crudActions';
+import EventBus from "~/plugins/event-bus";
 
 export default ({
   name: 'presentParentPage',
   layout: "default",
 
+  head: {
+    link: [
+      {rel: "stylesheet", href: "https://fonts.googleapis.com/css?family=Material+Icons"}
+    ]
+  },
+
   data() {
     return {
       dialog: false,
-      main_dialog: true,
+      dialog_file: false,
       content: "",
       forWhom: [],
       price: null,
@@ -207,12 +236,23 @@ export default ({
           value: 'price'
         }
       ],
-      presents: []
+      column_content: {
+        type: 'text',
+        title: 'お手伝い',
+        width: 250
+      },
+      column_price: {
+        type: 'numeric',
+        title: '報酬',
+        width: 200
+      },
+      columns: [],
+      presents: [],
+      myTableData: []
     }
   },
   async mounted() {
     let user = await authStateChanged();
-    console.log(user);
     if (user.uid) {
       this.isLogin=true;
       this.user = user;
@@ -226,61 +266,41 @@ export default ({
         this.presentCollRef = presentCollRef;
         
         //参照の中からpresentsを取得して，presents(collection)の中のdocumentを全取得
-        const presents_all = await getDocs(presentCollRef);
-        console.log(presents_all)
-        presents_all.forEach(doc => {
-          //ここでpresentsを更新する =>データがテーブルに反映されるはず
-          let data = doc.data();
-          data.id = doc.id;
-          this.presents.push(data);
-        })
+        this.presents = await fetch_items(presentCollRef);
+        console.log(this.presents)
 
         //自分のグループに参加しているchildユーザを全取得
         try {
           const memberCollRef = collection(fireStore, "groups", roomPath, "member");
-          this.memberCollRef = memberCollRef;
-          const member = await getDocs(memberCollRef);
-          console.log(member);
-          const children = []
-          member.forEach(doc => {
-            if (doc.data().attribute==="child") {
-              children.push(doc.data());
-              console.log(doc.data())
-            }
-          })
-          try {
-            for (let i = 0; i < children.length; i++) {
-              const childRef = doc(fireStore, "users", children[i].uid);
-              const childData = await getDoc(childRef);
-              let child = {}
-              child.data = childData.data();
-              child.uid = children[i].uid;
-              this.children.push(child);
-            }
-          }
-          catch (error) {
-            console.log('分割してみた')
-            console.log(error);
-          }
+          let children = await fetch_children(memberCollRef);
+          this.children = children;
+          this.createColumns(children);
         }
         catch (error) {
-          console.log('memberが取得できなかったエラー');
-          console.log(error);
+          // memberが取得できなかったエラー
+          this.message('『'+String(error) + '』が発生しました', 3);
         }
       }
       catch(error) {
-        console.log('presentsが取得できなかったエラー');
-        console.log(error);
+        // presentsが取得できなかったエラー
+        this.message('『'+String(error) + '』が発生しました', 3);
       }
       
     }
     else {
-      this.$store.commit("addMessage", {
-        text: "ログインしてください",
-        risk: 3, 
-      })
+      this.message('ログインしてください', 3);
       this.$router.push('/');
     }
+    EventBus.$on('res', async res => {
+      if (res==='close') this.dialog_file = false;
+      else if (res.type==='save') {
+        this.myTableData = res.data;
+        await this.edit_all();
+      }
+    });
+  },
+  beforeDestroy() {
+    EventBus.$off('res');
   },
   computed: {
 		width: function() {
@@ -296,105 +316,73 @@ export default ({
       let newary = this.forWhom.filter(one => one.uid !== uid)
       this.forWhom = newary;
     },
+    change_data_file() {
+      this.dialog_file = true;
+      setTimeout(() => {
+        clear_myTable();  //myTableの初期化
+        create_myTable(this.presents, this.columns);
+      }, 100)
+    },
     async create_item() { //tableに登録するアイテムの作成
-      let flag = true;
-      if (!this.is_written(this.content, this.price, this.forWhom)) {
-        flag = false;
-        this.$store.commit("addMessage", {
-          text: `記入漏れがあります`,
-          risk: 3,
-        });
-      }
-      else if (!this.is_long(this.content)) {
-        flag = false;
-        this.$store.commit("addMessage", {
-          text: `内容の説明が短いです`,
-          risk: 3,
-        });
-      }
-      if (flag) {
-        try {
-          for (let i = 0; i < this.forWhom.length; i++) {
-            let forWhom = this.forWhom[i];
-            const presentRef = await addDoc(this.presentCollRef, {
-              content: this.content,
-              price: this.price,  
-              forWhom: { 
-                name: forWhom.data.name,
-                uid: forWhom.uid,
-                attribute: forWhom.data.attribute //属性は確認用,
-              }      
-            })
-            await saveHistory(this.roomPath, this.user.uid, 
-              `${this.user.displayName}が${forWhom.data.name}を対象に，${this.content}を『ご褒美』に追加しました`
-            )
-          }
-          
-        }
-        catch(error) {
-          console.log('create_item error');
-          console.log(error);
-        }
+      const user = await authStateChanged();
+      const result = await create_item_for_presents(
+        user, 'presents', this.content, this.price, this.forWhom);
+      if (result.error) {
+        this.message(result.message, 3);
+      } else {
+        this.message(result.message, 1);
+        this.presents = await fetch_items(this.presentCollRef);
         this.dialog = false;
         this.content = "";
         this.price = null;
-        this.fetch_presents();
       }
     },
-    async delete_items(){ //既にtableに登録されているアイテムのうち選択したものを削除
-      let obj = this.selected;
-      for(let key in obj ) {
-        if( obj.hasOwnProperty(key) ) {
-          console.log(obj[key])
-          console.log(obj)
-          try {
-            await deleteDoc(doc(fireStore, "groups", this.roomPath, "presents", obj[key].id));
-            await saveHistory(this.roomPath, this.user.uid, 
-              `${this.user.displayName}が${obj[key].content}を『ご褒美』から削除しました`
-            )
-          }
-          catch(error) {
-            console.log(error)
-          }
+    async edit_all() {
+      await save_data(this.myTableData, this.presents, this.children, 'presents')
+      .then(async result => {
+        if (result.error) {
+          this.message(result.message, 3);
+        } else {
+          this.message(result.message, 1);
+          this.presents = await fetch_items(this.presentCollRef);
+          this.dialog_file = false;
         }
-      }
-      await this.fetch_presents();
-    },
-    async fetch_presents() {
-      console.log('fetch_presents')
-      const presents_all = await getDocs(this.presentCollRef);
-      this.presents = [];
-      presents_all.forEach(doc => {
-        //ここでpresentsを更新する =>データがテーブルに反映されるはず
-        try {
-          let data = doc.data();
-          data.id = doc.id;
-          this.presents.push(data);
-          console.log(data);
-        }
-        catch(error) {
-          console.log(error);
-        }
-        
       })
     },
-    is_written(content, price, forWhom) {
-      let ok = true;
-      if (!content) {
-        ok = false;
-      }
-      if (!price) {
-        ok = false;
-      }
-      if (forWhom.length === 0) {
-        ok = false;
-      }
-      return ok;
+    async delete_items(){ //既にtableに登録されているアイテムのうち選択したものを削除
+      await delete_items('presents', this.selected)
+      .then(async result => {
+        if (result.error) {
+          this.message(result.message, 3);
+        } else {
+          this.message(result.message, 1);
+          this.presents = await fetch_items(this.presentCollRef);
+          this.selected = [];
+        }
+      })
     },
-    is_long(content) {
-      let ok = true;
-      if (content.length==1) ok = false;
-      return ok;
+    getChildrenName(children) {
+      let childrenName = []
+      for (let i = 0; i < children.length; i++) {
+        childrenName.push(children[i].data.name);
+      }
+      return childrenName;
+    },
+    createColumns(children) {
+      let columns = [];
+      columns[0] = this.column_content;
+      const childrenName = this.getChildrenName(children);
+      columns[1] = {
+        type: 'dropdown',
+        title: '対象者',
+        width: 200,
+        source: childrenName
+      }
+      columns[2] = this.column_price;
+      this.columns = columns;
+    },
+    message(text, risk) {
+      this.$store.commit("addMessage", {text, risk});
     }
   }
 })

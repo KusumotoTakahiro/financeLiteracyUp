@@ -283,7 +283,7 @@ export default {
             await setDoc(doc(memberColl), {
               name: this.name,
               uid: this.uid,
-              attribute: this.attribute,
+              attribute: 'child',
             })
             //最後に通知は消しておく．（実際は消して消さなくてもいいかも）
             const inviteRef = doc(fireStore, "users", this.uid, "comminicate", this.uid);

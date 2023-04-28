@@ -391,4 +391,9 @@ export default ({
 .input_case {
   font-family: 'serif'
 }
+
+.jexcel_toolbar i {
+  margin-left: auto;
+  margin-right: auto;
+}
 </style>

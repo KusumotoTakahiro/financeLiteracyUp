@@ -269,6 +269,7 @@ export default ({
     },
     async change_name() {
       const roomColl = doc(fireStore, "groups", this.roomPath);
+      console.log(this.roomPath)
       await updateDoc(roomColl, {
         name: this.roomName,
       })

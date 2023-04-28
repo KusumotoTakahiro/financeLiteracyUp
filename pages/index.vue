@@ -1,7 +1,9 @@
 <template>
   <v-row align-content="center" justify="center">
     <v-col cols="12" sm="12" md="12" lg="12" xl="12" align="center">
-      <v-alert class="justify-center text-center text-h5"> パパyen </v-alert>
+      <v-alert class="justify-center text-center text-h5"> 
+        <div class="top_title">パパ円アプリ</div>
+      </v-alert>
       <v-card
         class="
           d-flex 
@@ -93,5 +95,10 @@ export default {
 </script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Gamja+Flower&display=swap');
+
+.top_title {
+  font-family: serif;
+  font-size: 1.5rem;
+}
 
 </style>

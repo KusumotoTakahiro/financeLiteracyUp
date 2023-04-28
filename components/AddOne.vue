@@ -13,7 +13,7 @@
       outlined
       shaped
     >
-      <v-card-title class="justify-center">お手伝い追加</v-card-title>
+      <v-card-title class="justify-center">個別追加</v-card-title>
       <v-card-text>
         <template>
           <div>
@@ -21,7 +21,7 @@
             <v-text-field
               v-model="content"
               clearable
-              placeholder="お手伝いの内容を記入してください"
+              placeholder="内容を入力してください"
               dense
               outlined
               type="text"
@@ -29,10 +29,11 @@
             ></v-text-field>
           </div>
           <div>
-            <div class="form-header">報酬</div>
+            <div class="form-header">金額</div>
             <v-text-field
               v-model="price"
               clearable
+              placeholder="金額を半角数字で入力してください"
               dense
               outlined
               type="tel"
@@ -51,7 +52,7 @@
       <v-card-actions class="justify-end">
         <v-btn
           text
-          @click="dialog = false"
+          @click="close_dialog()"
         >Close</v-btn>
       </v-card-actions>
     </v-card>
@@ -100,6 +101,10 @@ export default ({
         const items = await fetch_items(this.subjectCollRef);
         this.$emit('compAddOne', {items: items, dialog: false});
       }
+    },
+    async close_dialog() {
+      const items = await fetch_items(this.subjectCollRef);
+      this.$emit('compAddOne', {items: items, dialog: false});
     },
     /**
      * store経由でuserにアラートを数秒提示する関数．

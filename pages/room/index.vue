@@ -170,46 +170,53 @@ export default {
           id: 4
         },
         {
+          icon: "mdi-comment-text-multiple",
+          title: "自由記述",
+          to: `room/communication/p`,
+          color: "deep-orange lighten-3",
+          id: 5
+        },
+        {
           icon: "mdi-cash-100",
           title: "タックス追加",
           to: `room/tax/p`,
           color: "brown lighten-3",
-          id: 5
+          id: 6
         },
         {
           icon: "mdi-alarm-note",
           title: "通知",
           to: `room/note`,
           color: "pink lighten-1",
-          id: 6
+          id: 7
         },
         {
           icon: "mdi-clipboard-text-clock",
           title: "履歴",
           to: `room/history/p`,
           color: "teal lighten-2",
-          id: 7
+          id: 8
         },
         {
           icon: "mdi-account-multiple-plus",
           title: "ルーム招待",
           to: `room/invite`,
           color: "blue-grey darken-1",
-          id: 8
+          id: 9
         },
         {
           icon: "mdi-account-cog",
           title: "マイページ",
           to: `room/mypage`,
           color: "",
-          id: 9
+          id: 10
         },
         {
           icon: "mdi-cog-outline",
           title: "ルーム設定",
           to: `room/setting`,
           color: "blue-grey darken-1",
-          id: 10
+          id: 11
         },
         
       ],
@@ -243,32 +250,39 @@ export default {
           id: 4
         },
         {
+          icon: "mdi-comment-text-multiple",
+          title: "自由記述",
+          to: `room/communication/c`,
+          color: "deep-orange lighten-3",
+          id: 5
+        },
+        {
           icon: "mdi-cash-100",
           title: "タックス",
           to: `room/tax/c`,
           color: "brown lighten-3",
-          id: 5,
+          id: 6
         },
         {
           icon: "mdi-cash-plus",
           title: "貸す・借りる",
           to: `/room/loan`,
           color: "pink lighten-1",
-          id: 6,
+          id: 7
         },
         {
           icon: "mdi-clipboard-text-clock",
           title: "履歴",
           to: `/room/history/c`,
           color: "teal lighten-2",
-          id: 7,
+          id: 8
         },
         {
           icon: "mdi-account-cog",
           title: "マイページ",
           to: `room/mypage`,
           color: "",
-          id: 8,
+          id: 9
         }
       ]
     }
@@ -322,9 +336,9 @@ export default {
         const groupRef = doc(fireStore, "groups", this.roomPath);
         const groupItems = await getDoc(groupRef);
         this.roomName = groupItems.data().name;
-        if (this.myroomName!==null) {
-          this.roomName = this.myroomName;
-        }
+        // if (this.myroomName!==null) {
+        //   this.roomName = this.myroomName;
+        // }
         this.userName = user.displayName;
       }
       catch(error) {

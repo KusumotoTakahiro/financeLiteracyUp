@@ -267,7 +267,6 @@ export default ({
         
         //参照の中からpresentsを取得して，presents(collection)の中のdocumentを全取得
         this.presents = await fetch_items(presentCollRef);
-        console.log(this.presents)
 
         //自分のグループに参加しているchildユーザを全取得
         try {
@@ -387,7 +386,7 @@ export default ({
   }
 })
 </script>
-<style scoped>
+<style>
 .input_case {
   font-family: 'serif'
 }

@@ -3,6 +3,7 @@
     v-model="dialog"
     outlined
     hide-overlay
+    persistent
     max-width="600"
     content-class="rounded-lg elevation-2"
     transition="dialog-bottom-transition"
@@ -19,11 +20,24 @@
           <div>
             <div class="form-header">宛先</div>
             <v-select
-              label="select"
-              :items = "['apple', 'banana']"
+              v-model="forWhom"
+              :items="members"
+              item-text="data.name"
+              item-value="uid"
+              return-object
               multiple
               outlined
             ></v-select>
+            <div class="form-header">タイプ</div>
+            <v-row justify="space-around">
+              <v-radio-group 
+                v-model="tradeType"
+                row
+              >
+                <v-radio :label="attribute==='child'? '要求' : '報酬'" class="mx-7 text-h6" value="plus"></v-radio>
+                <v-radio :label="attribute==='child'? '支払い' : '請求'" class="mx-7 text-h6" value="minus"></v-radio>
+              </v-radio-group>
+            </v-row>
           </div>
           <div>
             <div class="form-header">金額</div>
@@ -71,7 +85,7 @@
 </template>
 <script>
 import {
-  create_item,
+  create_item_for_freeTrades,
   fetch_items,
 } from '~/plugins/crudActions';
 import {
@@ -83,39 +97,39 @@ export default ({
     return {
       content: '',
       price: null,
+      forWhom: [],
+      tradeType: 'plus'
     }
   },
   props: { 
     dialog: Boolean,
     subject: String,
     subjectCollRef: Object,
-  },
-  computed: {
-    getDialog() {
-      return this.dialog;
-    },
-    getSubject() {
-      return this.subject;
-    },
-    getSubjectCollRef() {
-      return this.subjectCollRef;
-    }
+    members: Array,
+    attribute: String,
   },
   methods: {
     async create_item() {
       const user = await authStateChanged();
-      const result = await create_item(user, this.subject, this.content, this.price);
+      const result = await create_item_for_freeTrades(
+        user, 'freeTrades', this.content, this.price, this.forWhom, this.tradeType);
       if (result.error) {
         this.message(result.message, 3);
       } else {
         this.message(result.message, 1);
         const items = await fetch_items(this.subjectCollRef);
+        this.reset_form();
         this.$emit('compAddOne', {items: items, dialog: false});
       }
     },
     async close_dialog() {
       const items = await fetch_items(this.subjectCollRef);
       this.$emit('compAddOne', {items: items, dialog: false});
+    },
+    reset_form() {
+      this.content = '';
+      this.price = null;
+      this.forWhom = [];
     },
     /**
      * store経由でuserにアラートを数秒提示する関数．

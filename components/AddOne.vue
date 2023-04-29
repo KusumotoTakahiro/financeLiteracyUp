@@ -3,6 +3,7 @@
     v-model="dialog"
     outlined
     hide-overlay
+    persistent
     max-width="600"
     content-class="rounded-lg elevation-2"
     transition="dialog-bottom-transition"

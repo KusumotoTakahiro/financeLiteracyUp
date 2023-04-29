@@ -172,7 +172,7 @@ export default {
         {
           icon: "mdi-comment-text-multiple",
           title: "自由記述",
-          to: `room/communication/p`,
+          to: `room/communication/com`,
           color: "deep-orange lighten-3",
           id: 5
         },
@@ -252,7 +252,7 @@ export default {
         {
           icon: "mdi-comment-text-multiple",
           title: "自由記述",
-          to: `room/communication/c`,
+          to: `room/communication/com`,
           color: "deep-orange lighten-3",
           id: 5
         },

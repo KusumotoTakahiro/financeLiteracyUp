@@ -483,6 +483,56 @@ export async function create_item_for_presents(user, subject, content, price, fo
 
 
 /**
+ * DB上にcontent, price, forWhomのデータを一組で登録する．
+ * @param {Object} user 
+ * @param {string} subject 
+ * @param {string} content 
+ * @param {number} price 
+ * @param {Array} forWhom - {name, uid, attribute}で構成されたobjectを要素に持つArray
+ * @returns {Object} - errorがあればtrue,なければfalseを返す．
+ * また，messageも合わせて返す.
+ */
+export async function create_item_for_freeTrades(user, subject, content, price, forWhom, tradeType) {
+  let error = false;
+  let message = '項目を追加しました！';
+  let result = data_check_for_presents(content, price, forWhom);
+  console.log(user)
+  if (!result.error) {
+    for (let i = 0; i < forWhom.length; i++) {
+      let oneOfForWhom = forWhom[i];
+      try {
+        await getCollectionRef(user, subject)
+        .then(docRef => {
+          addDoc(docRef, {
+            content,
+            price,
+            fromWhom: {
+              name: user.displayName,
+              uid: user.uid
+            },
+            forWhom: {
+              name: oneOfForWhom.data.name,
+              uid: oneOfForWhom.uid,
+              attribute: oneOfForWhom.data.attribute //属性は確認用
+            },
+            tradeType
+          })
+        })
+      }
+      catch(e) {
+        error = true;
+        message = '『'+String(e) + '』が発生しました';
+      }
+    }
+  } else {
+    error = true;
+    message = result.message;
+  }
+  return {error, message}
+}
+
+
+/**
  * 一括編集機能として，「DB上の保存済みデータにあるが，myTableにないデータを削除する」関数.
  * @param {object} user - 現在のログインuserの情報
  * @param {string} subject - works, shops, fines など
@@ -654,6 +704,35 @@ export async function fetch_children(collectionReference) {
     }
   }
   return children;
+}
+
+
+/**
+ * DBからchildデータを取得するための関数(presents.p.vueで使用する)
+ * @param {Collection} collectionReference 
+ * @returns {Array} - DBから取得したChild属性のmemberを取ってくる.
+ */
+export async function fetch_parents(collectionReference) {
+  const all_member = await getDocs(collectionReference);
+  let parents = [];
+  for (let i = 0; i < all_member.docs.length; i++) {
+    let one_member = all_member.docs[i].data();
+    if (one_member.attribute !== 'child') {
+      try {
+        const parentRef = doc(fireStore, "users", one_member.uid);
+        const parentData = await getDoc(parentRef);
+        let parent = {}
+        parent.data = parentData.data();
+        parent.uid = one_member.uid;
+        parents.push(parent);
+      }
+      catch(e) {
+        const error_message = '『'+String(e) + '』が発生しました';
+        console.log(error_message);
+      }
+    }
+  }
+  return parents;
 }
 
 
@@ -917,4 +996,50 @@ export function clear_myTable(id='mytable') {
     const cloneParent = parent.cloneNode(false); //外側だけ複製
     parent.parentNode.replaceChild(cloneParent, parent);
   }
+}
+
+
+export async function caluculateBalance(nowItem, attribute) {
+  let error = false;
+  let name = 'none';
+  let uid = null;
+  if (attribute==='parent') {
+    name = nowItem.fromWhom.name;
+    uid = nowItem.fromWhom.uid;
+  }
+  else { // attribute='child'のとき
+    name = nowItem.forWhom.name;
+    uid = nowItem.forWhom.uid;
+  }
+  let message = '正常に'+ name +'の残高を更新しました．';
+  const ref = doc(fireStore, "users", uid);
+  const querySnapshot = await getDoc(ref);
+  const balance = querySnapshot.data().balance;
+  if (nowItem.tradeType === 'plus') {
+    try {
+      await updateDoc(ref, {
+        balance: Math.floor(Number(balance) + Number(nowItem.price))
+      })
+      .then(delete_items('freeTrades', [nowItem]))
+    }
+    catch (e) {
+      error = true;
+      message = e;
+      console.log(e);
+    }
+  }
+  else if (nowItem.tradeType === 'minus') {
+    try {
+      await updateDoc(ref, {
+        balance: Math.floor(Number(balance) - Number(nowItem.price))
+      })
+      .then(delete_items('freeTrades', [nowItem]))
+    }
+    catch (e) {
+      error = true;
+      message = e;
+      console.log(e);
+    }
+  }
+  return {error, message}
 }

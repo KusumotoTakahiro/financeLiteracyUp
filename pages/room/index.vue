@@ -143,7 +143,7 @@ export default {
       parentItems: [
         {
           icon: "mdi-hexagon-slice-3",
-          title: "お仕事追加",
+          title: "お手伝追加",
           to: `room/work/p`,
           color: "light-blue lighten-1",
           id: 1,

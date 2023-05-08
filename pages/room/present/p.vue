@@ -238,7 +238,7 @@ export default ({
       ],
       column_content: {
         type: 'text',
-        title: 'お手伝い',
+        title: 'ご褒美',
         width: 250
       },
       column_price: {

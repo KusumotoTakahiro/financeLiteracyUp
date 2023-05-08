@@ -1,5 +1,5 @@
 import colors from 'vuetify/es5/util/colors'
-const { API_KEY, AUTH_DOMAIN, DATABASE_URL, PROJECT_ID, STORAGE_BUCKET, MESSAGING_SENDER_ID } = process.env
+const { API_KEY, AUTH_DOMAIN, DATABASE_URL, PROJECT_ID, STORAGE_BUCKET, APP_ID, MESSAGING_SENDER_ID } = process.env
 
 
 export default {

@@ -398,7 +398,7 @@ export default ({
 			original_price = 0;
 			if (data.exists()) {
 				//削除されておらず，存在した場合は，そのまま，
-				original_price = data.data().price;
+				original_price = Number(data.data().price);
 				console.log(data.data())
 			}
 			else {
@@ -410,7 +410,6 @@ export default ({
         });
 				original_price = 0;
 			}
-			console.log(original_price);
 			let tax = 0;
 			let taxs = [];
 			switch (type) { //ここで元の値段に税金がかかる．今は未実装.
@@ -431,10 +430,11 @@ export default ({
 					//original_price = original_price;
 					break;
 				case "shop":
+					console.log(typeof original_price)
 					taxs = vm.shop_taxs;
 					for (let i = 0; i < taxs.length; i++) {
 						tax = original_price*taxs[i].price/100;
-						original_price += tax;
+						original_price += Number(tax);
 					}
 					original_price = - original_price;
 					break;

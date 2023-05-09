@@ -46,7 +46,7 @@
               ここで変更したルーム名はこのアカウントのみに反映されます
             </div>
             <v-row 
-              class="mt-0 mb-3 mx-auto"
+              class="mt-0 mb-5 mx-auto"
               align-content="center"
               justify="space-around"
             >
@@ -133,7 +133,7 @@
               ここで変更した壁紙はこのアカウントのみに反映されます
             </div>
             <v-row 
-              class="mt-0 mb-3 mx-auto"
+              class="mt-0 mb-5 mx-auto"
               align-content="center"
               justify="space-around"
             >
@@ -156,7 +156,7 @@
           <!-- dividerにwidthを付けると変にレイアウトが崩れない -->
           <v-divider  ></v-divider>
           <v-row 
-          class="mt-5 mb-5 mx-auto"
+          class="my-7 mx-auto"
           align-content="center"
           justify="center"
           >
@@ -165,13 +165,40 @@
           <!-- dividerにwidthを付けると変にレイアウトが崩れない -->
           <v-divider  ></v-divider>
           <v-row
-            class="mt-5 mb-10 mx-auto"
+            class="my-7 mx-auto"
             align-content="center"
             justify="center"
           >
-            <v-btn width="200px" class="mx-auto mb-1" @click="goToHome()">
+            <v-btn width="200px" class="mx-auto mt-1" @click="goToHome()">
               Homeに戻る
             </v-btn>
+          </v-row>
+          <!-- dividerにwidthを付けると変にレイアウトが崩れない -->
+          <v-divider  ></v-divider>
+          <v-row
+            class="my-15 mx-auto"
+            align-content="center"
+            justify="center"
+          >
+            <v-card>
+              <v-card-title class="pb-0 d-flex flex-column align-start">
+                <span class="title">TITLE</span>
+              </v-card-title>
+              <v-card-text class="d-flex align-center">
+                <span class="mr-1">Link:</span>
+                <v-btn
+                  href="https://crawling-goal-39c.notion.site/7a9161e1b6bf4764992ceae3cddf2d64"
+                  text
+                  color="link"
+                  min-height="20"
+                  class="x-small post-link align-center py-1 px-2"
+                  rel="noreferrer noopener"
+                  target="_blank"
+                >
+                  <span class="text-left">パパ円アプリの使用説明書はこちら</span>
+                </v-btn>
+              </v-card-text>
+            </v-card>
           </v-row>
         </div>
         <v-dialog
@@ -526,4 +553,16 @@ export default ({
 .input_case2 {
   font-family:  serif;
 }
+
+.post-link {
+  display: inline-block;
+  word-break: break-all;
+  padding: 2px 8px;
+  border-radius: 5px;
+  text-transform: none !important;
+  white-space: normal;
+  max-width: calc(100% - 30px);
+  height: inherit !important;
+}
+
 </style>

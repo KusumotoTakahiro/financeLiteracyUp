@@ -199,7 +199,7 @@ export default {
         },
         {
           icon: "mdi-account-multiple-plus",
-          title: "ルーム招待",
+          title: "グループ招待",
           to: `room/invite`,
           color: "blue-grey darken-1",
           id: 9

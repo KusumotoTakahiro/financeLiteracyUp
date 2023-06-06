@@ -21,6 +21,7 @@
             show-select
             class="elevation-0"
             fixed-header
+            :sort-by="['rowNum']"
             :height="$vuetify.breakpoint.height - 210"
           ></v-data-table>
           <v-row
@@ -75,6 +76,7 @@
         subject='fines'
         :subjectCollRef='fineCollRef'
         @compAddOne='compAddOne'
+        :rowNum='fines.length+1'
       ></add-one>
       
     </v-col>
@@ -126,9 +128,13 @@ export default ({
       selected: [],
       headers: [
         {
-          text: '罰則',
+          text: '行',
+          value: 'rowNum',
           align: 'start',
           sortable: false,
+        },
+        {
+          text: '罰則',
           value: 'content',
         },
         {

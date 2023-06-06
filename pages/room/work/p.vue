@@ -21,6 +21,7 @@
             show-select
             class="elevation-0"
             fixed-header
+            :sort-by="['rowNum']"
             :height="$vuetify.breakpoint.height-210"
           ></v-data-table>
           <v-row
@@ -73,6 +74,7 @@
         subject='works'
         :subjectCollRef='workCollRef'
         @compAddOne='compAddOne'
+        :rowNum='works.length+1'
       ></add-one>
     </v-col>
   </v-row>
@@ -123,15 +125,19 @@ export default ({
       selected: [],
       headers: [
         {
-          text: 'お手伝い',
+          text: '行',
+          value: 'rowNum',
           align: 'start',
           sortable: false,
+        },
+        {
+          text: 'お手伝い',
           value: 'content',
         },
         {
           text: '報酬（パパ円）',
           value: 'price'
-        }
+        },
       ],
       columns: [
         { 
@@ -143,7 +149,7 @@ export default ({
           type: 'numeric',
           title: '報酬',
           width: 200,
-        }, 
+        },
       ],
       works: [], // DBから取得した全データを格納.
       myTableData: [], // 一括修正時のデータを一時的に格納.

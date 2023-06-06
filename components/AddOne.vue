@@ -79,7 +79,9 @@ export default ({
     dialog: Boolean,
     subject: String,
     subjectCollRef: Object,
+    rowNum: Number,
   },
+  // ここいるっけ？いらんくないかね．
   computed: {
     getDialog() {
       return this.dialog;
@@ -94,7 +96,8 @@ export default ({
   methods: {
     async create_item() {
       const user = await authStateChanged();
-      const result = await create_item(user, this.subject, this.content, this.price);
+      const result = await create_item(user, this.subject, this.content, this.price, this.rowNum);
+      console.log(this.rowNum)
       if (result.error) {
         this.message(result.message, 3);
       } else {

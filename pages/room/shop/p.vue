@@ -21,6 +21,7 @@
             show-select
             class="elevation-0"
             fixed-header
+            :sort-by="['rowNum']"
             :height="$vuetify.breakpoint.height - 210"
           ></v-data-table>
           <v-row
@@ -73,6 +74,7 @@
         subject='shops'
         :subjectCollRef='shopCollRef'
         @compAddOne='compAddOne'
+        :rowNum='shops.length+1'
       ></add-one>
     </v-col>
   </v-row>
@@ -121,9 +123,13 @@ export default ({
       selected: [],
       headers: [
         {
-          text: '商品',
+          text: '行',
+          value: 'rowNum',
           align: 'start',
           sortable: false,
+        },
+        {
+          text: '商品',
           value: 'content',
         },
         {

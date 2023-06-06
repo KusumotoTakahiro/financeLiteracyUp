@@ -53,7 +53,11 @@ export async function save_data_by_jspreadsheet(modified_data, original_data, su
       if (res) error = res
       else {
         await delete_by_myTable(user, subject, original_data, modified_data)
-        .then(res => error=res)
+        .then(async res => {
+          error = res;
+          // テーブルの各データに行番号を付与する処理.
+
+        })
       }
     })
     return {error, 'message': '正常に更新しました'};
@@ -73,6 +77,7 @@ export async function save_data_by_jspreadsheet_for_presents(modified_data, orig
   let message = '';
   // たぶん重複は許すしかない．だめそうなら別途関数を作り直す．
   // const check_duplicate = check_content_is_duplicate(modified_data);
+  console.log(modified_data)
   const check_brank = check_missing_entries_myTable_for_presents(modified_data);
   const check_format = check_format_myTableCells_for_presents(modified_data);
   if (check_brank) {
@@ -159,7 +164,7 @@ function check_missing_entries_myTable(modified_data) {
 function check_missing_entries_myTable_for_presents(modified_data) {
   for (let i = 0; i < modified_data.length; i++) {
     const content_isEmpty = modified_data[i][0].trim() === '';
-    const forWhom_isEmpty = modified_data[i][1].trim() === '';
+    const forWhom_isEmpty = String(modified_data[i][1]).trim() === '';
     const price_isEmpty = String(modified_data[i][2]).trim() === '';
     const all_empty = content_isEmpty && forWhom_isEmpty && price_isEmpty;
     const all_entered = !content_isEmpty && !forWhom_isEmpty && !price_isEmpty;
@@ -238,6 +243,10 @@ function check_format_myTableCells_for_presents(modified_data) {
  */
 async function create_and_update_by_myTable(user, subject, original_data, modified_data) {
   /**
+   * @type {number} 空白行を数えるカウンタ．行を正しく整理するために使う．
+   */
+  let blankRowNum = 0;
+  /**
    * 途中でdata_check()に引っかかったかどうかを判定するフラグ
    * @type {Boolean} error
    */
@@ -279,6 +288,11 @@ async function create_and_update_by_myTable(user, subject, original_data, modifi
             if (result) error = true;
           })
         }
+        // ここで，行番号を更新する．
+        await update_item_rowNum(user, subject, original_data[j].id, i - blankRowNum + 1)
+        .then(result => {
+          if (result) error = true;
+        })
       }
     }
     // myTableにしか載っていないcontentを新規データとしてDBに登録する
@@ -286,10 +300,13 @@ async function create_and_update_by_myTable(user, subject, original_data, modifi
       // 空白チェック済みのため，両方空白か両方埋まってるかのどちらかしかない．
       // ⇩そのため，両方空白かは片方確認するだけで済んでいる
       if (!(modified_content.trim() === '')) {
-        await create_item(user, subject, modified_content, modified_price)
+        await create_item(user, subject, modified_content, modified_price, i - blankRowNum + 1)
         .then(result => {
           if (result.error) error = true;
         })
+      }
+      else {
+        blankRowNum += 1;
       }
     }
   }
@@ -343,6 +360,7 @@ async function create_by_myTable_for_presents(user, subject, original_data, modi
        * 変更前のforWhom(対象者)
        * @type {string} original_forWhom
        */
+      console.log(original_data[j])
       const original_forWhom = String(original_data[j].forWhom.name);
       /**
        * 変更前のprice(パパ円)
@@ -407,15 +425,40 @@ async function update_item(user, subject, docid, nowContent, newPrice) {
 
 
 /**
+ * テーブルに表示するデータに行番号を付与する/更新する関数．
+ * @param {Object} user - 現在ログインしているuserの情報
+ * @param {String} subject - 現在変更対象のDB上のcollection(WorksやShopなど)
+ * @param {String} docid - documentID．DB上での保存場所を一意に指定している．
+ * @param {Number} rowNum  
+ * @returns {boolean} - 正常に更新できたかをerrorフラグで返す.
+ */
+async function update_item_rowNum(user, subject, docid, rowNum) {
+  let error = false;
+  try {
+    await getContentDocRef(user, subject, docid)
+    .then(docRef => {
+      updateDoc(docRef, { rowNum: Number(rowNum) })
+    })
+  }
+  catch(e) {
+    error = true;
+    const error_message = '『'+String(e) + '』が発生しました';
+  }
+  return error;
+}
+
+
+/**
  * DB上にcontentとpriceの組で一つ登録する関数.
  * @param {Object} user 
  * @param {string} subject 
  * @param {string} content 
- * @param {number} price 
+ * @param {number} price
+ * @param {number} rowNum
  * @returns {Object} - errorがあればtrue,なければfalseを返す．
  * また，messageも合わせて返す.
  */
-export async function create_item(user, subject, content, price) {
+export async function create_item(user, subject, content, price, rowNum) {
   let error = false;
   let message = '項目を追加しました！';
   let result = data_check(content, price);
@@ -423,7 +466,7 @@ export async function create_item(user, subject, content, price) {
     try {
       await getCollectionRef(user, subject)
       .then(docRef => {
-        addDoc(docRef, {content, price})
+        addDoc(docRef, {content, price, rowNum})
       })
     }
     catch(e) {
@@ -674,7 +717,20 @@ export async function fetch_items(collectionReference) {
       const error_message = '『'+String(e) + '』が発生しました';
     }
   })
-  return items;
+  const sorted_items = await sortItems(items);
+  return sorted_items;
+}
+
+/**
+ * itemsをrowNumで昇順に並び替える関数（Tableと一括編集時の編集画面の並びを固定化するための一操作）
+ * @param {Array} items 
+ * @returns 
+ */
+function sortItems(items) {
+  let sorted_items  = items.sort(function(a, b) {
+    return (a.rowNum < b.rowNum) ? -1 : 1;
+  })
+  return sorted_items;
 }
 
 
